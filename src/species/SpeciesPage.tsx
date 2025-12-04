@@ -15,18 +15,18 @@ import SpeciesCard from "@/species/SpecieCard";
 
 // TODO share the URL between pages
 
-const EditCategory = () => {
-  // TODO edit single category : rename, delete
-};
+// const EditCategory = () => {
+//   // TODO edit single category : rename, delete
+// };
 
-// TODO edit categories: add, rename, delete
-const EditCategories = ({}: { onAddCategory: () => void }) => {
-  return (
-    <div>
-      <input type="text" /> <button>Add Category</button>
-    </div>
-  );
-};
+// // TODO edit categories: add, rename, delete
+// const EditCategories = ({}: { onAddCategory: () => void }) => {
+//   return (
+//     <div>
+//       <input type="text" /> <button>Add Category</button>
+//     </div>
+//   );
+// };
 
 const SpeciesPage = ({
   onShowLatestObservations,
