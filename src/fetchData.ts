@@ -1,4 +1,4 @@
-export const fetchData = (URL: string) =>
+export const fetchData = <T>(URL: string): Promise<T> =>
   fetch(URL, {
     credentials: "omit",
     headers: {

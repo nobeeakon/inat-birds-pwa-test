@@ -106,12 +106,12 @@ export const useFetchObservations = (
       }
 
       const queries = selectRandomNumbers(9, 120).map((page) =>
-        fetchData(parseURLWithPage(url, page))
+        fetchData<ResponseType>(parseURLWithPage(url, page))
       );
 
       setQueries({ loading: true, data: null, error: null });
       try {
-        const data = await Promise.all<ResponseType>(queries);
+        const data = await Promise.all(queries);
 
         const items = data
           .map((dataItem) => dataItem.results)

@@ -53,13 +53,19 @@ const SpecieCard = ({
   const [editCategory, setEditCategory] = useState(false);
 
   const imageUrl =
-    data.taxon.default_photo?.square_url?.replace("square", "medium") || "";
+    (data.taxon.default_photo?.square_url?.replace("square", "medium") || "") +
+    "?cache=true";
 
   return (
     <div
       style={{ border: "1px solid gray", marginBottom: "8px", padding: "8px" }}
     >
-      <img src={imageUrl} alt={data.taxon.name} />
+      {/* {!!imageUrlCached && <img src={imageUrl} alt={data.taxon.name} onLoad={e => console.log('hola img', e)}/>} */}
+      <img
+        src={imageUrl}
+        alt={data.taxon.name}
+        onLoad={(e) => console.log("hola img", e)}
+      />
       <p>
         <strong>
           <i>{data.taxon.name} </i>

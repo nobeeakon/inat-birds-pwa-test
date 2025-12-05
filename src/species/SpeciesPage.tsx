@@ -10,8 +10,6 @@ import SpeciesCard from "@/species/SpecieCard";
 // TODO edit category as overlay/modal
 // TODO use a different photo, selected from the observations
 // TODO add notes in the specie card
-// TODO cache the species data
-// TODO cache species photo
 
 // TODO share the URL between pages
 
@@ -30,18 +28,24 @@ import SpeciesCard from "@/species/SpecieCard";
 
 const SpeciesPage = ({
   onShowLatestObservations,
+  onShowLocations,
+  url,
+  currentLocationId,
+  updateLocation,
 }: {
   onShowLatestObservations: () => void;
+  onShowLocations: () => void;
+  url: string;
+  currentLocationId: string;
+  updateLocation: (newLocationId: string) => void;
 }) => {
-  const [url, setUrl] = useState(
-    () => storage.get<string>(LOCAL_STORAGE_KEY.species.lastUrl) ?? ""
-  );
   const [categories, setCategories] = useState(
     () =>
       storage.get<Record<string, string[]>>(
         LOCAL_STORAGE_KEY.species.speciesCategories
       ) ?? {}
   );
+  const [searchTerm, setSearchTerm] = useState("");
 
   const getSpecieCategory = (taxonId: number) => {
     const stringTaxonId = taxonId.toString();
@@ -79,22 +83,48 @@ const SpeciesPage = ({
     );
   };
 
-  const speciesData = useFetchSpecies(url, 20);
+  const speciesData = useFetchSpecies(url, 1);
+
+  const filteredSpeciesData =
+    !searchTerm || !speciesData.data
+      ? speciesData.data
+      : speciesData.data.filter((item) => {
+          const lowerSearchTerm = searchTerm.toLowerCase().trim();
+          return (
+            item.taxon.name.toLowerCase().includes(lowerSearchTerm) ||
+            item.taxon.preferred_common_name
+              ?.toLowerCase()
+              .includes(lowerSearchTerm)
+          );
+        });
 
   return (
     <div>
       <Header
-        value={url}
-        onSelected={setUrl}
+        currentLocationId={currentLocationId}
+        updateLocation={updateLocation}
         onShowLatestObservations={onShowLatestObservations}
+        onShowLocations={onShowLocations}
       />
 
       {speciesData.loading && <div>Loading...</div>}
       {speciesData.error && <div>Error</div>}
-      {speciesData.data && (
+      {filteredSpeciesData && (
         <div>
-          <h2>Species Data ({speciesData.data.length})</h2>
-          {speciesData.data.map((item) => (
+          <h2>
+            Species Data ({filteredSpeciesData.length} /{" "}
+            {speciesData.data?.length || 0})
+          </h2>
+
+          <div>
+            <label htmlFor="search-specie">Search</label>
+            <input
+              type="text"
+              id="search-specie"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          {filteredSpeciesData.map((item) => (
             <SpeciesCard
               key={`spp-${item.taxon.id}`}
               data={item}

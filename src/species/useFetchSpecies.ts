@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
+import { sleep } from "@/utils";
 
 type Photo = {
   id: number;
@@ -54,6 +55,24 @@ const parseURLWithPage = (url: string, page: number) => {
   return newUrl.toString();
 };
 
+const fetchSpecies = async (url: string, numberOfPages: number) => {
+  const result = [];
+
+  for (let page = 1; page <= numberOfPages; page++) {
+    await sleep(1500); // ok to do this since is going to happen in the background
+    const pageUrl = parseURLWithPage(url, page);
+    const data = await fetchData<ResponseType>(parseURLWithPage(pageUrl, page));
+
+    if (data.results.length === 0) {
+      break;
+    }
+
+    result.push(...data.results);
+  }
+
+  return result;
+};
+
 // TODO do as infinite pager
 export const useFetchSpecies = (url: string, numberOfPages: number = 10) => {
   const [queries, setQueries] = useState<{
@@ -68,17 +87,11 @@ export const useFetchSpecies = (url: string, numberOfPages: number = 10) => {
         setQueries({ loading: false, data: null, error: null });
       }
 
-      const queries = Array(numberOfPages)
-        .fill(null)
-        .map((_, page) => fetchData(parseURLWithPage(url, page)));
-
       setQueries({ loading: true, data: null, error: null });
       try {
-        const data = await Promise.all<ResponseType>(queries);
+        const data = await fetchSpecies(url, numberOfPages);
 
-        const items = data.map((dataItem) => dataItem.results).flat();
-
-        setQueries({ loading: false, data: items, error: null });
+        setQueries({ loading: false, data, error: null });
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
         setQueries({ loading: false, data: null, error: true });

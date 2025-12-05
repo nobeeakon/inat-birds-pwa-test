@@ -38,6 +38,38 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        runtimeCaching: [
+          {
+            urlPattern:
+              /^https:\/\/api\.inaturalist\.org\/v2\/observations\/species_counts/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "inat-species-cache",
+              expiration: {
+                maxEntries: 70,
+                maxAgeSeconds: 60 * 60 * 24 * 2, // 2 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern:
+              /^https:\/\/inaturalist-open-data\.s3\.amazonaws\.com\/photos\/\d+\/medium\.jpg\?cache=true/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "inat-photos-cache",
+              expiration: {
+                maxEntries: 900,
+                maxAgeSeconds: 60 * 60 * 24 * 2, // 2 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -41,6 +41,7 @@ export const useStorageState = <
     | string
     | number
     | boolean
+    | null
     | Array<unknown>
     | Record<string, unknown>,
 >(

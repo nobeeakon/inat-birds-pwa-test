@@ -4,22 +4,25 @@ import { useFetchObservations } from "@/latest-observations/useFetchObservations
 import { useStorageState } from "@/storage";
 import { LOCAL_STORAGE_KEY } from "@/constants";
 import ObservationCard from "@/latest-observations/ObservationCard";
-import HeaderWrapper from "@/latest-observations/Header";
+import Header from "@/latest-observations/Header";
 import type { ObservationStatus } from "@/latest-observations/types";
 import usePreviousObservations from "@/latest-observations/usePreviousObservations";
 import { getRandomIndex } from "@/utils";
 // TODO add an error boundary
 
 const LatestObservationsPage = ({
+  currentLocationId,
   onShowSpecies,
+  onShowLocations,
+  url,
+  updateLocation,
 }: {
+  currentLocationId: string;
   onShowSpecies: () => void;
+  onShowLocations: () => void;
+  url: string;
+  updateLocation: (newLocationId: string) => void;
 }) => {
-  const [url, setUrl] = useStorageState<string>(
-    LOCAL_STORAGE_KEY.LAST_URL_KEY,
-    ""
-  );
-
   const query = useFetchObservations(url);
   const [indices, setIndices] = useState([0]);
   const [showEditExcludedTaxa, setShowEditExcludedTaxa] = useState(false);
@@ -104,9 +107,9 @@ const LatestObservationsPage = ({
     onNext();
   };
 
-  const onSelectUrl = (newUrl: string) => {
+  const handleUpdateLocation = (newLocationId: string) => {
     setIndices([0]);
-    setUrl(newUrl);
+    updateLocation(newLocationId);
   };
 
   const currendIdx = indices[indices.length - 1];
@@ -115,14 +118,15 @@ const LatestObservationsPage = ({
   return (
     <>
       <div>
-        <HeaderWrapper
+        <Header
           onExcludeTaxa={onExcludeTaxa}
-          value={url}
-          onSelected={onSelectUrl}
+          currentLocationId={currentLocationId}
+          updateLocation={handleUpdateLocation}
           toggleEditExcludedTaxa={() =>
             setShowEditExcludedTaxa(!showEditExcludedTaxa)
           }
           onShowSpecies={onShowSpecies}
+          onShowLocations={onShowLocations}
         />
       </div>
 
