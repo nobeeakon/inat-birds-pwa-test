@@ -7,11 +7,13 @@ const Header = ({
   updateLocation,
   onShowLatestObservations,
   onShowLocations,
+  onEditCategories,
 }: {
   currentLocationId: string;
   updateLocation: (locationId: string) => void;
   onShowLatestObservations: () => void;
   onShowLocations: () => void;
+  onEditCategories: () => void;
 }) => {
   const [showConfig, setShowConfig] = useState(false);
   const locations = useLocationsContext().locationsInfo;
@@ -55,6 +57,7 @@ const Header = ({
           }}
         >
           <button onClick={onShowLocations}>Edit locations</button>
+          <button onClick={onEditCategories}>Edit categories</button>
         </div>
       )}
     </div>

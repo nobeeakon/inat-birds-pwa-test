@@ -1,30 +1,55 @@
-import { storage } from "@/storage";
+import { useStorageState } from "@/storage";
 import { useState } from "react";
 import Header from "@/species/Header";
 import { LOCAL_STORAGE_KEY } from "@/constants";
 import { useFetchSpecies } from "@/species/useFetchSpecies";
 import SpeciesCard from "@/species/SpecieCard";
 
-// TODO add search box by category, name or common name
-// TODO floating button to edit categories
-// TODO edit category as overlay/modal
 // TODO use a different photo, selected from the observations
 // TODO add notes in the specie card
 
-// TODO share the URL between pages
+type CategoryType = {
+  name: string;
+  taxa: string[];
+};
+type CategoryMapType = Record<string, CategoryType>;
 
-// const EditCategory = () => {
-//   // TODO edit single category : rename, delete
-// };
-
-// // TODO edit categories: add, rename, delete
-// const EditCategories = ({}: { onAddCategory: () => void }) => {
-//   return (
-//     <div>
-//       <input type="text" /> <button>Add Category</button>
-//     </div>
-//   );
-// };
+const EditCategories = ({
+  categoriesMap,
+  onAddCategory,
+  onUpdateCategoryName,
+  onDeleteCategory,
+}: {
+  categoriesMap: CategoryMapType;
+  onAddCategory: () => void;
+  onUpdateCategoryName: (categoryId: string, newName: string) => void;
+  onDeleteCategory: (categoryId: string) => void;
+}) => {
+  return (
+    <div>
+      <button onClick={onAddCategory}>Add category</button>
+      <div>
+        {Object.entries(categoriesMap).map(([categoryIdItem, categoryItem]) => (
+          <div key={categoryIdItem}>
+            <label>
+              Name:
+              <input
+                type="text"
+                value={categoryItem.name}
+                onChange={(e) =>
+                  onUpdateCategoryName(categoryIdItem, e.target.value)
+                }
+              />{" "}
+            </label>{" "}
+            <button onClick={() => onDeleteCategory(categoryIdItem)}>
+              delete
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const SpeciesPage = ({
   onShowLatestObservations,
@@ -39,63 +64,101 @@ const SpeciesPage = ({
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
 }) => {
-  const [categories, setCategories] = useState(
-    () =>
-      storage.get<Record<string, string[]>>(
-        LOCAL_STORAGE_KEY.species.speciesCategories
-      ) ?? {}
-  );
+  const [categories, setCategories] = useStorageState<
+    Record<string, CategoryType>
+  >(LOCAL_STORAGE_KEY.species.speciesCategories, {});
+  const [showCategories, setShowCategories] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState("");
 
-  const getSpecieCategory = (taxonId: number) => {
+  const getSpecieCategories = (taxonId: number) => {
+    const result: { name: string; id: string }[] = [];
     const stringTaxonId = taxonId.toString();
-    for (const [category, taxa] of Object.entries(categories)) {
+    for (const [categoryId, { name, taxa }] of Object.entries(categories)) {
       if (taxa.includes(stringTaxonId)) {
-        return category;
+        result.push({ name, id: categoryId });
       }
     }
+    return result;
   };
 
-  const onSpecieCategoryChange = (taxonId: number, newCategory: string) => {
+  const onSpecieCategoryChange = (taxonId: number, newCategoryId: string) => {
     const newCategories = { ...categories };
     const stringTaxonId = taxonId.toString();
 
-    // remove previous
-    for (const taxa of Object.values(newCategories)) {
-      const index = taxa.indexOf(stringTaxonId);
-      if (index !== -1) {
-        taxa.splice(index, 1);
+    if (newCategoryId) {
+      let newTaxa = [...newCategories[newCategoryId].taxa];
+      if (newTaxa.includes(stringTaxonId)) {
+        newTaxa = newTaxa.filter(
+          (taxonIdItem) => taxonIdItem !== stringTaxonId
+        );
+      } else {
+        newTaxa.push(stringTaxonId);
+      }
+
+      newCategories[newCategoryId].taxa = newTaxa;
+    } else {
+      // remove previous
+      for (const { taxa } of Object.values(newCategories)) {
+        const index = taxa.indexOf(stringTaxonId);
+        if (index !== -1) {
+          taxa.splice(index, 1);
+        }
       }
     }
 
-    // add to new category
-    if (newCategory && !newCategories[newCategory]) {
-      newCategories[newCategory] = [];
-    }
-    if (newCategory) {
-      newCategories[newCategory].push(stringTaxonId);
-    }
-
     setCategories(newCategories);
-    storage.set<Record<string, string[]>>(
-      LOCAL_STORAGE_KEY.species.speciesCategories,
-      newCategories
-    );
   };
 
-  const speciesData = useFetchSpecies(url, 1);
+  const onAddCategory = () => {
+    const newCategoryKey = `category-${Date.now()}`;
+    const newCategories = {
+      ...categories,
+      [newCategoryKey]: { name: "", taxa: [] },
+    };
+
+    setCategories(newCategories);
+  };
+
+  const onUpdateCategoryName = (categoryId: string, newName: string) => {
+    const newCategories = { ...categories };
+    newCategories[categoryId].name = newName;
+
+    setCategories(newCategories);
+  };
+
+  const onDeleteCategory = (categoryId: string) => {
+    const newCategories = { ...categories };
+    delete newCategories[categoryId];
+
+    setCategories(newCategories);
+  };
+
+  const speciesData = useFetchSpecies(url, 10);
 
   const filteredSpeciesData =
     !searchTerm || !speciesData.data
       ? speciesData.data
       : speciesData.data.filter((item) => {
           const lowerSearchTerm = searchTerm.toLowerCase().trim();
-          return (
-            item.taxon.name.toLowerCase().includes(lowerSearchTerm) ||
-            item.taxon.preferred_common_name
-              ?.toLowerCase()
-              .includes(lowerSearchTerm)
+
+          const includesName = item.taxon.name
+            .toLowerCase()
+            .includes(lowerSearchTerm);
+          const includesCommonName = item.taxon.preferred_common_name
+            ?.toLowerCase()
+            .includes(lowerSearchTerm);
+          const includesCategory = Object.entries(categories).some(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            ([_, categoryItem]) => {
+              return (
+                categoryItem.name.toLowerCase().includes(lowerSearchTerm) &&
+                categoryItem.taxa.includes(item.taxon.id.toString())
+              );
+            }
           );
+
+          return includesName || includesCommonName || includesCategory;
         });
 
   return (
@@ -105,6 +168,7 @@ const SpeciesPage = ({
         updateLocation={updateLocation}
         onShowLatestObservations={onShowLatestObservations}
         onShowLocations={onShowLocations}
+        onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
       {speciesData.loading && <div>Loading...</div>}
@@ -124,14 +188,24 @@ const SpeciesPage = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          {showCategories && (
+            <EditCategories
+              categoriesMap={categories}
+              onAddCategory={onAddCategory}
+              onUpdateCategoryName={onUpdateCategoryName}
+              onDeleteCategory={onDeleteCategory}
+            />
+          )}
           {filteredSpeciesData.map((item) => (
             <SpeciesCard
               key={`spp-${item.taxon.id}`}
               data={item}
-              categories={Object.keys(categories)}
-              category={getSpecieCategory(item.taxon.id)}
-              onCategoryChange={(newCategory) => {
-                onSpecieCategoryChange(item.taxon.id, newCategory || "");
+              speciesCategories={getSpecieCategories(item.taxon.id)}
+              allCategories={Object.entries(categories).map(
+                ([id, { name }]) => ({ id, name })
+              )}
+              onCategoryChange={(newCategoryId) => {
+                onSpecieCategoryChange(item.taxon.id, newCategoryId || "");
               }}
             />
           ))}

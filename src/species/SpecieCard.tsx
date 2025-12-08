@@ -2,53 +2,56 @@ import { useState } from "react";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 
 const EditCategory = ({
-  category,
-  categories,
-  onDone,
-  onCancel,
+  speciesCategories,
+  allCategories,
+  onUpdateCategories,
+  onClose,
 }: {
-  category?: string;
-  categories: string[];
-  onDone: (newCategory?: string) => void;
-  onCancel: () => void;
+  speciesCategories: { id: string; name: string }[];
+  allCategories: { id: string; name: string }[];
+  onUpdateCategories: (newCategoryId: string) => void;
+  onClose: () => void;
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState(category);
-
-  const onSave = () => {
-    onDone(selectedCategory);
-  };
+  const sortedCategories = allCategories.sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 
   return (
     <div>
-      <select
-        value={selectedCategory ?? ""}
-        onChange={(e) => {
-          setSelectedCategory(e.target.value || undefined);
-        }}
-      >
-        <option value="">Select category</option>
-        {categories.map((categoryItem, index) => (
-          <option key={index} value={categoryItem}>
-            {categoryItem}
-          </option>
+      <div>
+        {sortedCategories.map((categoryItem) => (
+          <button
+            key={categoryItem.id}
+            onClick={() => onUpdateCategories(categoryItem.id)}
+            style={{
+              backgroundColor: speciesCategories?.some(
+                (cat) => cat.id === categoryItem.id
+              )
+                ? "lightblue"
+                : "white",
+            }}
+          >
+            {categoryItem.name}
+          </button>
         ))}
-      </select>
-      <button onClick={onCancel}>Cancel</button>
-      <button onClick={onSave}>Guardar</button>
+      </div>
+      <div>
+        <button onClick={onClose}>Cerrar</button>
+      </div>
     </div>
   );
 };
 
 const SpecieCard = ({
   data,
-  category,
+  speciesCategories,
+  allCategories,
   onCategoryChange,
-  categories,
 }: {
   data: SpeciesData;
-  category?: string;
+  speciesCategories: { id: string; name: string }[];
+  allCategories: { id: string; name: string }[];
   onCategoryChange: (newCategory?: string) => void;
-  categories: string[];
 }) => {
   const [editCategory, setEditCategory] = useState(false);
 
@@ -58,14 +61,15 @@ const SpecieCard = ({
 
   return (
     <div
-      style={{ border: "1px solid gray", marginBottom: "8px", padding: "8px" }}
+      style={{
+        border: "1px solid lightgray",
+        borderRadius: "8px",
+        marginTop: "8px",
+        marginBottom: "8px",
+        padding: "8px",
+      }}
     >
-      {/* {!!imageUrlCached && <img src={imageUrl} alt={data.taxon.name} onLoad={e => console.log('hola img', e)}/>} */}
-      <img
-        src={imageUrl}
-        alt={data.taxon.name}
-        onLoad={(e) => console.log("hola img", e)}
-      />
+      <img src={imageUrl} alt={data.taxon.name} width="100%" />
       <p>
         <strong>
           <i>{data.taxon.name} </i>
@@ -74,17 +78,18 @@ const SpecieCard = ({
       </p>
       <p> [{data.count}]</p>
 
+      {!!speciesCategories?.length && (
+        <p> Category: {speciesCategories.map((cat) => cat.name).join(", ")}</p>
+      )}
+
       {!editCategory ? (
         <button onClick={() => setEditCategory(true)}>Edit Category</button>
       ) : (
         <EditCategory
-          category={category}
-          categories={categories}
-          onDone={(newCategory) => {
-            onCategoryChange(newCategory);
-            setEditCategory(false);
-          }}
-          onCancel={() => setEditCategory(false)}
+          allCategories={allCategories}
+          speciesCategories={speciesCategories}
+          onUpdateCategories={onCategoryChange}
+          onClose={() => setEditCategory(false)}
         />
       )}
     </div>

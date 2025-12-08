@@ -43,18 +43,19 @@ const ObservationCard = ({
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
           gap: "1rem",
-          marginBottom: "0.2rem",
+          marginBottom: "0.8rem",
         }}
       >
         <button
           onClick={() => onNext("identified")}
           style={{ backgroundColor: "lightgreen" }}
         >
-          Bien
+          Fácil
         </button>
-        <button onClick={() => onNext("sorOfIdentified")}>Maomenos</button>
-        <button onClick={() => onNext("unidentified")}>Mal</button>
+        <button onClick={() => onNext("sorOfIdentified")}>Bien</button>
+        <button onClick={() => onNext("unidentified")}>Difícil</button>
         <button onClick={onPrevious}>Prev</button>
       </div>
       <div
@@ -67,7 +68,7 @@ const ObservationCard = ({
           style={{
             backgroundColor: "lightblue",
             display: "block",
-            width: "300px",
+            width: "100%",
           }}
         >
           Show
@@ -85,11 +86,11 @@ const ObservationCard = ({
         <img
           src={imgUrl}
           alt={data.taxon?.preferred_common_name || "Observation Photo"}
-          style={{ maxWidth: "340px" }}
+          style={{ width: "100%" }}
         />
       )}
       {data.photos.length > 1 && (
-        <div style={{ display: "flex", gap: "2rem" }}>
+        <div style={{ display: "flex", gap: "2rem", justifyContent: "center" }}>
           {
             <button
               onClick={onPrevPhoto}
