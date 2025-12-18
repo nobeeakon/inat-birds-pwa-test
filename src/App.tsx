@@ -14,7 +14,7 @@ import "./App.css";
 
 const App = () => {
   const [page, setPage] = useState<"observations" | "species" | "locations">(
-    "species"
+    "observations"
   );
   const [currentLocationId, setCurrentLocationId] = useStorageState<
     string | null

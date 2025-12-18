@@ -32,6 +32,7 @@ const ObservationCard = ({
       setPhotoIdx((prev) => (prev - 1 < 0 ? prev : prev - 1));
     }
   };
+
   return (
     <div
       style={{
@@ -86,7 +87,13 @@ const ObservationCard = ({
         <img
           src={imgUrl}
           alt={data.taxon?.preferred_common_name || "Observation Photo"}
-          style={{ width: "100%" }}
+          style={{
+            width: "100%",
+            maxWidth: "500px",
+            marginLeft: "auto",
+            marginRight: "auto",
+            display: "block",
+          }}
         />
       )}
       {data.photos.length > 1 && (

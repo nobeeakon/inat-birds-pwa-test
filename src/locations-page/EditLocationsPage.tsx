@@ -1,127 +1,92 @@
 import { useState } from "react";
 import { useLocationsContext } from "@/LocationsContext";
 import type { LocationInformation } from "@/types";
+import Map from "@/components/Map";
 
-const EditLocations = ({
-  locations,
-  setLocations,
+const EditLocation = ({
+  location,
+  updateLocation,
+  onDone,
+  onDeleteLocation,
 }: {
-  locations: LocationInformation[];
-  setLocations: (locations: LocationInformation[]) => void;
+  location: LocationInformation;
+  updateLocation: (location: LocationInformation) => void;
+  onDone: () => void;
+  onDeleteLocation: () => void;
 }) => {
-  return (
-    <div>
-      {locations.map((locationItem, index) => (
-        <div key={locationItem.id}>
-          <label>
-            <span>Name:</span>
-            <input
-              type="text"
-              value={locationItem.name}
-              onChange={(e) => {
-                const newLocations = [...locations];
-                newLocations[index].name = e.target.value;
-                setLocations(newLocations);
-              }}
-            />
-          </label>
-          <label>
-            <span>Latitude:</span>
-            <input
-              type="number"
-              value={locationItem.lat}
-              onChange={(e) => {
-                const newLocations = [...locations];
-
-                newLocations[index].lat = Number(e.target.value);
-                setLocations(newLocations);
-              }}
-            />
-          </label>
-          <label>
-            <span>Longitude:</span>
-            <input
-              type="number"
-              value={locationItem.lng}
-              onChange={(e) => {
-                const newLocations = [...locations];
-
-                newLocations[index].lng = Number(e.target.value);
-                setLocations(newLocations);
-              }}
-            />
-          </label>
-          <label>
-            <span>Radio:</span>
-            <input
-              type="number"
-              value={locationItem.radius}
-              onChange={(e) => {
-                const newLocations = [...locations];
-
-                newLocations[index].radius = Number(e.target.value);
-                setLocations(newLocations);
-              }}
-            />
-          </label>
-          <button
-            onClick={() => {
-              const newLocations = locations.filter((_, i) => i !== index);
-              setLocations(newLocations);
-            }}
-          >
-            Delete
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const AddLocation = () => {
-  const { locationsInfo, setLocationsInfo } = useLocationsContext();
-  const [formData, setFormData] = useState<
-    Pick<LocationInformation, "name" | "lat" | "lng" | "radius">
-  >({
-    name: "",
-    lat: 0,
-    lng: 0,
-    radius: 5,
-  });
+  const [isMapClickEnabled, setIsMapClickEnabled] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    setLocationsInfo([
-      ...locationsInfo,
-      {
-        id: crypto.randomUUID(),
-        name: formData.name,
-        lat: formData.lat,
-        lng: formData.lng,
-        radius: 10,
-      },
-    ]);
+    onDone();
+  };
 
-    setFormData({
-      name: "",
-      lat: 0,
-      lng: 0,
-      radius: 5,
-    });
+  const handleGetCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateLocation({
+            ...location,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert("Could not get your location");
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser");
+    }
   };
 
   return (
     <div>
+      <div style={{ marginBottom: "20px" }}>
+        <h3>Select Location</h3>
+        <button
+          type="button"
+          onClick={() => setIsMapClickEnabled(!isMapClickEnabled)}
+          style={{
+            marginBottom: "10px",
+            padding: "8px 16px",
+            backgroundColor: isMapClickEnabled ? "#4CAF50" : "#2196F3",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          {isMapClickEnabled
+            ? "✓ Click on Map Enabled"
+            : "📍 Enable Click on Map"}
+        </button>
+        <Map
+          center={[location.lat, location.lng]}
+          zoom={12}
+          radius={location.radius}
+          height="300px"
+          onMapClick={
+            isMapClickEnabled
+              ? (lat, lng) => {
+                  updateLocation({ ...location, lat, lng });
+                }
+              : undefined
+          }
+        />
+      </div>
+
       <form onSubmit={handleSubmit}>
         <div>
           <label>
             Name:
             <input
               type="text"
-              value={formData.name}
+              value={location.name}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
+                updateLocation({ ...location, name: e.target.value })
               }
               required
             />
@@ -132,12 +97,10 @@ const AddLocation = () => {
             Latitude:
             <input
               type="number"
-              value={formData.lat}
+              step="any"
+              value={location.lat}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  lat: Number(e.target.value),
-                }))
+                updateLocation({ ...location, lat: Number(e.target.value) })
               }
               required
             />
@@ -148,12 +111,10 @@ const AddLocation = () => {
             Longitude:
             <input
               type="number"
-              value={formData.lng}
+              step="any"
+              value={location.lng}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  lng: Number(e.target.value),
-                }))
+                updateLocation({ ...location, lng: Number(e.target.value) })
               }
               required
             />
@@ -162,49 +123,36 @@ const AddLocation = () => {
 
         <div>
           <label>
-            Radius:
+            Radius (km):
             <input
               type="number"
-              value={formData.radius}
+              step="any"
+              value={location.radius}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  radius: Number(e.target.value),
-                }))
+                updateLocation({ ...location, radius: Number(e.target.value) })
               }
               required
             />
           </label>
         </div>
         <div>
-          <button type="submit">Add Location</button>
+          <button type="button" onClick={handleGetCurrentLocation}>
+            📍 Use Current Location
+          </button>
+          <button type="submit">Done</button>
         </div>
       </form>
+      <button onClick={onDeleteLocation}>Eliminar</button>
     </div>
   );
 };
 
-const Header = ({
-  hasLocations,
-  isAddLocation,
-  toggleIsAddLocation,
-  onShowObservationsPage,
-}: {
-  hasLocations: boolean;
-  isAddLocation: boolean;
-  toggleIsAddLocation: () => void;
-  onShowObservationsPage: () => void;
-}) => {
-  return (
-    <div>
-      {hasLocations && <button onClick={onShowObservationsPage}>Done</button>}
-      <button onClick={() => toggleIsAddLocation()}>
-        {isAddLocation && hasLocations
-          ? "Editar Locations"
-          : "Agregar Location"}
-      </button>
-    </div>
-  );
+const DEFAULT_NEW_LOCATION: LocationInformation = {
+  id: "",
+  name: "",
+  lat: 20,
+  lng: -99,
+  radius: 5,
 };
 
 const LocationsPage = ({
@@ -212,24 +160,84 @@ const LocationsPage = ({
 }: {
   onShowObservationsPage: () => void;
 }) => {
-  const [isAddLocation, setIsAddLocation] = useState(false);
   const { locationsInfo, setLocationsInfo } = useLocationsContext();
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    null
+  );
+  const selectedLocation =
+    locationsInfo.find((loc) => loc.id === selectedLocationId) ?? null;
+
+  const onDeleteLocation = (locationId: string) => {
+    const newLocations = locationsInfo.filter((loc) => loc.id !== locationId);
+    setLocationsInfo(newLocations);
+    setSelectedLocationId(null);
+  };
+
+  const onAddNewLocation = () => {
+    const newLocation: LocationInformation = {
+      ...DEFAULT_NEW_LOCATION,
+      id: `loc-${Date.now()}`, // Simple unique ID
+      name: `Location ${locationsInfo.length + 1}`,
+    };
+    setLocationsInfo([...locationsInfo, newLocation]);
+    setSelectedLocationId(newLocation.id);
+  };
 
   return (
     <div>
-      <Header
-        hasLocations={locationsInfo.length > 0}
-        isAddLocation={isAddLocation}
-        toggleIsAddLocation={() => setIsAddLocation(!isAddLocation)}
-        onShowObservationsPage={onShowObservationsPage}
-      />
-      {isAddLocation || locationsInfo.length === 0 ? (
-        <AddLocation />
-      ) : (
-        <EditLocations
-          locations={locationsInfo}
-          setLocations={setLocationsInfo}
+      <div>
+        {locationsInfo.length > 0 && (
+          <button onClick={onShowObservationsPage}>Done</button>
+        )}
+        <button onClick={onAddNewLocation}>Add Location</button>
+      </div>
+
+      {selectedLocation ? (
+        <EditLocation
+          location={selectedLocation}
+          onDeleteLocation={() => onDeleteLocation(selectedLocation.id)}
+          updateLocation={(updatedLocation) => {
+            const newLocations = locationsInfo.map((loc) =>
+              loc.id === updatedLocation.id ? updatedLocation : loc
+            );
+            setLocationsInfo(newLocations);
+          }}
+          onDone={() => setSelectedLocationId(null)}
         />
+      ) : (
+        <div>
+          {locationsInfo.map((locationItem, index) => (
+            <div
+              key={locationItem.id}
+              style={{
+                border: "1px solid #ccc",
+                padding: "10px",
+                marginBottom: "10px",
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+              }}
+            >
+              <span>
+                Name: {locationItem.name}. Radius (km): {locationItem.radius}
+              </span>
+
+              <button onClick={() => setSelectedLocationId(locationItem.id)}>
+                Editar
+              </button>
+              <button
+                onClick={() => {
+                  const newLocations = locationsInfo.filter(
+                    (_, i) => i !== index
+                  );
+                  setLocationsInfo(newLocations);
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

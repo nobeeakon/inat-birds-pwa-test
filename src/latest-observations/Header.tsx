@@ -28,19 +28,6 @@ const Header = ({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <label htmlFor="url-selector">Data:</label>
-        <select
-          id="url-selector"
-          value={currentLocationId}
-          onChange={(e) => updateLocation(e.target.value)}
-        >
-          <option value="">Select Location</option>
-          {locations.map((locationItem) => (
-            <option key={locationItem.id} value={locationItem.id}>
-              {locationItem.name}
-            </option>
-          ))}
-        </select>
         <div
           style={{
             display: "flex",
@@ -49,9 +36,9 @@ const Header = ({
             flexWrap: "wrap",
           }}
         >
+          <button onClick={onShowSpecies}>Species</button>
           <button onClick={onExcludeTaxa}>Excluir</button>
           <button onClick={() => setShowConfig(!showConfig)}>Config</button>
-          <button onClick={onShowSpecies}>Species</button>
         </div>
       </div>
       {showConfig && (
@@ -66,6 +53,19 @@ const Header = ({
             padding: "0.5rem",
           }}
         >
+          <label htmlFor="url-selector">Data:</label>
+          <select
+            id="url-selector"
+            value={currentLocationId}
+            onChange={(e) => updateLocation(e.target.value)}
+          >
+            <option value="">Select Location</option>
+            {locations.map((locationItem) => (
+              <option key={locationItem.id} value={locationItem.id}>
+                {locationItem.name}
+              </option>
+            ))}
+          </select>
           <button onClick={onShowLocations}>Edit locations</button>
 
           <button onClick={toggleEditExcludedTaxa}>Excluir spp.</button>

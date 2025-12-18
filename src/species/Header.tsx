@@ -21,19 +21,6 @@ const Header = ({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-        <label htmlFor="url-selector">Data:</label>
-        <select
-          id="url-selector"
-          value={currentLocationId}
-          onChange={(e) => updateLocation(e.target.value)}
-        >
-          <option value="">Select location</option>
-          {locations.map((locationItem) => (
-            <option key={locationItem.id} value={locationItem.id}>
-              {locationItem.name}
-            </option>
-          ))}
-        </select>
         <div
           style={{
             display: "flex",
@@ -42,8 +29,8 @@ const Header = ({
             flexWrap: "wrap",
           }}
         >
-          <button onClick={() => setShowConfig(!showConfig)}>Config</button>
           <button onClick={onShowLatestObservations}>Observations</button>
+          <button onClick={() => setShowConfig(!showConfig)}>Config</button>
         </div>
       </div>
       {showConfig && (
@@ -56,6 +43,19 @@ const Header = ({
             marginTop: "1rem",
           }}
         >
+          <label htmlFor="url-selector">Data:</label>
+          <select
+            id="url-selector"
+            value={currentLocationId}
+            onChange={(e) => updateLocation(e.target.value)}
+          >
+            <option value="">Select location</option>
+            {locations.map((locationItem) => (
+              <option key={locationItem.id} value={locationItem.id}>
+                {locationItem.name}
+              </option>
+            ))}
+          </select>
           <button onClick={onShowLocations}>Edit locations</button>
           <button onClick={onEditCategories}>Edit categories</button>
         </div>
