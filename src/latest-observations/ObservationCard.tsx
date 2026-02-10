@@ -1,5 +1,14 @@
 import { useState } from "react";
 import "@/App.css";
+import {
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  Button,
+  Box,
+  Typography,
+} from "@mui/material";
 
 import { type ObservationType } from "@/latest-observations/useFetchObservations";
 import type { ObservationStatus } from "@/latest-observations/types";
@@ -34,84 +43,75 @@ const ObservationCard = ({
   };
 
   return (
-    <div
-      style={{
-        marginBottom: "16px",
-        marginTop: "16px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "1rem",
-          marginBottom: "0.8rem",
-        }}
-      >
-        <button
+    <Card>
+      <CardActions sx={{ display: "flex", gap: 2, mb: 1 }}>
+        <Button
+          fullWidth
+          variant="contained"
+          color="success"
           onClick={() => onNext("identified")}
-          style={{ backgroundColor: "lightgreen" }}
         >
           Fácil
-        </button>
-        <button onClick={() => onNext("sorOfIdentified")}>Bien</button>
-        <button onClick={() => onNext("unidentified")}>Difícil</button>
-        <button onClick={onPrevious}>Prev</button>
-      </div>
-      <div
-        style={{
-          marginBottom: "0.2rem",
-        }}
-      >
-        <button
-          onClick={() => setShowTaxa(true)}
-          style={{
-            backgroundColor: "lightblue",
-            display: "block",
-            width: "100%",
-          }}
+        </Button>
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => onNext("sorOfIdentified")}
         >
+          Bien
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          onClick={() => onNext("unidentified")}
+        >
+          Difícil
+        </Button>
+        <Button fullWidth variant="outlined" onClick={onPrevious}>
+          Prev
+        </Button>
+      </CardActions>
+
+      <Box sx={{ textAlign: "center", m: 1, }}>
+        <Button onClick={() => setShowTaxa(true)} color="info" fullWidth>
           Show
-        </button>
-      </div>
+        </Button>
+      </Box>
+
       {showTaxa && (
-        <p>
-          <strong>
-            <i>{data.taxon?.name} </i>
-          </strong>{" "}
-          ({data.taxon?.preferred_common_name})
-        </p>
+        <CardContent>
+          <Typography>
+            <strong>
+              <i>{data.taxon?.name}</i>
+            </strong>{" "}
+            ({data.taxon?.preferred_common_name})
+          </Typography>
+        </CardContent>
       )}
+
       {!!imgUrl && (
-        <img
-          src={imgUrl}
+        <CardMedia
+          component="img"
+          image={imgUrl}
           alt={data.taxon?.preferred_common_name || "Observation Photo"}
-          style={{
-            width: "100%",
-            maxWidth: "500px",
-            marginLeft: "auto",
-            marginRight: "auto",
-            display: "block",
-          }}
+          sx={{ maxWidth: 500, mx: "auto", display: "block" }}
         />
       )}
+
       {data.photos.length > 1 && (
-        <div style={{ display: "flex", gap: "2rem", justifyContent: "center" }}>
-          {
-            <button
-              onClick={onPrevPhoto}
-              style={{ visibility: photoIdx > 0 ? "visible" : "hidden" }}
-            >
-              Anterior
-            </button>
-          }
+        <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, p: 2 }}>
+          <Button
+            onClick={onPrevPhoto}
+            sx={{ visibility: photoIdx > 0 ? "visible" : "hidden" }}
+          >
+            Anterior
+          </Button>
           {photoIdx < data.photos.length - 1 && (
-            <button onClick={onNextPhoto}>Siguiente</button>
+            <Button onClick={onNextPhoto}>Siguiente</Button>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Card>
   );
 };
 

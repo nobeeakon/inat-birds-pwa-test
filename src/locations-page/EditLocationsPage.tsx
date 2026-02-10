@@ -1,4 +1,18 @@
 import { useState } from "react";
+import {
+  TextField,
+  Button,
+  Stack,
+  Typography,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+} from "@mui/material";
 import { useLocationsContext } from "@/LocationsContext";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
@@ -43,26 +57,22 @@ const EditLocation = ({
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: "20px" }}>
-        <h3>Select Location</h3>
-        <button
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ mb: 1 }}>
+          Select Location
+        </Typography>
+        <Button
           type="button"
           onClick={() => setIsMapClickEnabled(!isMapClickEnabled)}
-          style={{
-            marginBottom: "10px",
-            padding: "8px 16px",
-            backgroundColor: isMapClickEnabled ? "#4CAF50" : "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
+          variant={isMapClickEnabled ? "contained" : "outlined"}
+          color={isMapClickEnabled ? "success" : "primary"}
+          sx={{ mb: 2 }}
         >
           {isMapClickEnabled
             ? "✓ Click on Map Enabled"
             : "📍 Enable Click on Map"}
-        </button>
+        </Button>
         <Map
           center={[location.lat, location.lng]}
           zoom={12}
@@ -76,74 +86,64 @@ const EditLocation = ({
               : undefined
           }
         />
-      </div>
+      </Box>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Name:
-            <input
-              type="text"
-              value={location.name}
-              onChange={(e) =>
-                updateLocation({ ...location, name: e.target.value })
-              }
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Latitude:
-            <input
-              type="number"
-              step="any"
-              value={location.lat}
-              onChange={(e) =>
-                updateLocation({ ...location, lat: Number(e.target.value) })
-              }
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Longitude:
-            <input
-              type="number"
-              step="any"
-              value={location.lng}
-              onChange={(e) =>
-                updateLocation({ ...location, lng: Number(e.target.value) })
-              }
-              required
-            />
-          </label>
-        </div>
-
-        <div>
-          <label>
-            Radius (km):
-            <input
-              type="number"
-              step="any"
-              value={location.radius}
-              onChange={(e) =>
-                updateLocation({ ...location, radius: Number(e.target.value) })
-              }
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <button type="button" onClick={handleGetCurrentLocation}>
+      <Stack component="form" onSubmit={handleSubmit} spacing={2}>
+        <TextField
+          label="Name"
+          value={location.name}
+          onChange={(e) =>
+            updateLocation({ ...location, name: e.target.value })
+          }
+          required
+          fullWidth
+        />
+        <TextField
+          label="Latitude"
+          type="number"
+          inputProps={{ step: "any" }}
+          value={location.lat}
+          onChange={(e) =>
+            updateLocation({ ...location, lat: Number(e.target.value) })
+          }
+          required
+          fullWidth
+        />
+        <TextField
+          label="Longitude"
+          type="number"
+          inputProps={{ step: "any" }}
+          value={location.lng}
+          onChange={(e) =>
+            updateLocation({ ...location, lng: Number(e.target.value) })
+          }
+          required
+          fullWidth
+        />
+        <TextField
+          label="Radius (km)"
+          type="number"
+          inputProps={{ step: "any" }}
+          value={location.radius}
+          onChange={(e) =>
+            updateLocation({ ...location, radius: Number(e.target.value) })
+          }
+          required
+          fullWidth
+        />
+        <Stack direction="row" spacing={1}>
+          <Button type="button" onClick={handleGetCurrentLocation}>
             📍 Use Current Location
-          </button>
-          <button type="submit">Done</button>
-        </div>
-      </form>
-      <button onClick={onDeleteLocation}>Eliminar</button>
-    </div>
+          </Button>
+          <Button type="submit" variant="contained">
+            Done
+          </Button>
+        </Stack>
+      </Stack>
+      <Button onClick={onDeleteLocation} color="error" sx={{ mt: 2 }}>
+        Eliminar
+      </Button>
+    </Box>
   );
 };
 
@@ -184,13 +184,17 @@ const LocationsPage = ({
   };
 
   return (
-    <div>
-      <div>
+    <Box>
+      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         {locationsInfo.length > 0 && (
-          <button onClick={onShowObservationsPage}>Done</button>
+          <Button onClick={onShowObservationsPage} variant="contained">
+            Done
+          </Button>
         )}
-        <button onClick={onAddNewLocation}>Add Location</button>
-      </div>
+        <Button onClick={onAddNewLocation} variant="outlined">
+          Add Location
+        </Button>
+      </Stack>
 
       {selectedLocation ? (
         <EditLocation
@@ -205,41 +209,49 @@ const LocationsPage = ({
           onDone={() => setSelectedLocationId(null)}
         />
       ) : (
-        <div>
-          {locationsInfo.map((locationItem, index) => (
-            <div
-              key={locationItem.id}
-              style={{
-                border: "1px solid #ccc",
-                padding: "10px",
-                marginBottom: "10px",
-                display: "flex",
-                gap: "10px",
-                alignItems: "center",
-              }}
-            >
-              <span>
-                Name: {locationItem.name}. Radius (km): {locationItem.radius}
-              </span>
-
-              <button onClick={() => setSelectedLocationId(locationItem.id)}>
-                Editar
-              </button>
-              <button
-                onClick={() => {
-                  const newLocations = locationsInfo.filter(
-                    (_, i) => i !== index
-                  );
-                  setLocationsInfo(newLocations);
-                }}
-              >
-                Eliminar
-              </button>
-            </div>
-          ))}
-        </div>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Radius (km)</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {locationsInfo.map((locationItem, index) => (
+                <TableRow key={locationItem.id}>
+                  <TableCell>{locationItem.name}</TableCell>
+                  <TableCell>{locationItem.radius}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        onClick={() => setSelectedLocationId(locationItem.id)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          const newLocations = locationsInfo.filter(
+                            (_, i) => i !== index
+                          );
+                          setLocationsInfo(newLocations);
+                        }}
+                      >
+                        Eliminar
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-    </div>
+    </Box>
   );
 };
 

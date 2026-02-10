@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
+import { Box } from "@mui/material";
 
 import LatestObservationsPage from "@/latest-observations/LatestObservationsPage";
 import SpeciesPage from "@/species/SpeciesPage";
 import LocationsPage from "./locations-page/EditLocationsPage";
-import { useStorageState } from "@/storage";
+import { useStorageState } from "@/storage/storage";
 import { LOCAL_STORAGE_KEY } from "@/constants";
 import { getUrl } from "@/utils";
 import LocationsContextProvider, {
   useLocationsContext,
 } from "@/LocationsContext";
+import SpeciesInfoContextProvider from "@/SpeciesInfoContext";
 
 import "./App.css";
 
@@ -42,7 +44,7 @@ const App = () => {
   }
 
   return (
-    <div>
+    <Box sx={{ px: 2 }}>
       {!currentLocationId || !currentLocation ? (
         <div>Please select a location in Species Page</div>
       ) : (
@@ -81,7 +83,7 @@ const App = () => {
           </div>
         </>
       )}
-    </div>
+    </Box>
   );
 };
 
@@ -89,7 +91,9 @@ const AppWrapper = () => {
   return (
     <div>
       <LocationsContextProvider>
-        <App />
+        <SpeciesInfoContextProvider>
+          <App />
+        </SpeciesInfoContextProvider>
       </LocationsContextProvider>
     </div>
   );

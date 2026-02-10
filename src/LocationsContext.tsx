@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { LocationInformation } from "@/types";
-import { useStorageState } from "@/storage";
+import { useStorageState } from "@/storage/storage";
 import { LOCAL_STORAGE_KEY } from "@/constants";
 
 import "./App.css";

@@ -1,4 +1,4 @@
-export const notNull = <T>(value: T | null | undefined): value is T => {
+export const notNullish = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;
 };
 

@@ -1,4 +1,14 @@
 import { useState } from "react";
+import {
+  Card,
+  CardMedia,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
+  Box,
+  Chip,
+} from "@mui/material";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 
 const EditCategory = ({
@@ -17,28 +27,30 @@ const EditCategory = ({
   );
 
   return (
-    <div>
-      <div>
+    <Box>
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
         {sortedCategories.map((categoryItem) => (
-          <button
+          <Chip
             key={categoryItem.id}
+            label={categoryItem.name}
             onClick={() => onUpdateCategories(categoryItem.id)}
-            style={{
-              backgroundColor: speciesCategories?.some(
-                (cat) => cat.id === categoryItem.id
-              )
-                ? "lightblue"
-                : "white",
-            }}
-          >
-            {categoryItem.name}
-          </button>
+            color={
+              speciesCategories?.some((cat) => cat.id === categoryItem.id)
+                ? "primary"
+                : "default"
+            }
+            variant={
+              speciesCategories?.some((cat) => cat.id === categoryItem.id)
+                ? "filled"
+                : "outlined"
+            }
+          />
         ))}
-      </div>
-      <div>
-        <button onClick={onClose}>Cerrar</button>
-      </div>
-    </div>
+      </Box>
+      <Box>
+        <Button onClick={onClose}>Cerrar</Button>
+      </Box>
+    </Box>
   );
 };
 
@@ -60,39 +72,42 @@ const SpecieCard = ({
     "?cache=true";
 
   return (
-    <div
-      style={{
-        border: "1px solid lightgray",
-        borderRadius: "8px",
-        marginTop: "8px",
-        marginBottom: "8px",
-        padding: "8px",
-      }}
-    >
-      <img src={imageUrl} alt={data.taxon.name} width="100%" />
-      <p>
-        <strong>
-          <i>{data.taxon.name} </i>
-        </strong>{" "}
-        ({data.taxon.preferred_common_name})
-      </p>
-      <p> [{data.count}]</p>
+    <Card sx={{ maxWidth: 400, width: "100%" }}>
+      <CardMedia
+        component="img"
+        image={imageUrl}
+        alt={data.taxon.name}
+        sx={{ width: "100%", height: "auto", aspectRatio: "4/3", objectFit: "cover" }}
+      />
+      <CardContent>
+        <Typography>
+          <strong>
+            <i>{data.taxon.name}</i>
+          </strong>{" "}
+          ({data.taxon.preferred_common_name})
+          <span> [{data.count}]</span>
+        </Typography>
 
-      {!!speciesCategories?.length && (
-        <p> Category: {speciesCategories.map((cat) => cat.name).join(", ")}</p>
-      )}
+        {!!speciesCategories?.length && (
+          <Typography>
+            Category: {speciesCategories.map((cat) => cat.name).join(", ")}
+          </Typography>
+        )}
+      </CardContent>
 
-      {!editCategory ? (
-        <button onClick={() => setEditCategory(true)}>Edit Category</button>
-      ) : (
-        <EditCategory
-          allCategories={allCategories}
-          speciesCategories={speciesCategories}
-          onUpdateCategories={onCategoryChange}
-          onClose={() => setEditCategory(false)}
-        />
-      )}
-    </div>
+      <CardActions>
+        {!editCategory ? (
+          <Button onClick={() => setEditCategory(true)}>Edit Category</Button>
+        ) : (
+          <EditCategory
+            allCategories={allCategories}
+            speciesCategories={speciesCategories}
+            onUpdateCategories={onCategoryChange}
+            onClose={() => setEditCategory(false)}
+          />
+        )}
+      </CardActions>
+    </Card>
   );
 };
 

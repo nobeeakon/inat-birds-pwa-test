@@ -6,9 +6,9 @@ import {
   Circle,
   useMapEvents,
 } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import { Icon } from "leaflet";
 import { useEffect, useState } from "react";
+import { Box, CircularProgress } from "@mui/material";
 
 // Fix for default marker icon issue in React-Leaflet
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -65,47 +65,71 @@ const Map = ({
   }, []);
 
   if (!isMounted) {
-    return <div style={{ height, background: "#e0e0e0" }}>Loading map...</div>;
+    return (
+      <Box
+        sx={{
+          bgcolor: "grey.300",
+          height,
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      style={{ height, width: "100%" }}
-      scrollWheelZoom={true}
+    <Box
+      sx={{
+        height,
+        width: "100%",
+        "& .leaflet-container": {
+          height: "100%",
+          width: "100%",
+        },
+      }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <MapClickHandler onMapClick={onMapClick} />
-
-      {/* Show radius circle if provided */}
-      {radius && (
-        <Circle
-          center={center}
-          radius={radius * 1000} // Convert km to meters
-          pathOptions={{
-            color: "blue",
-            fillColor: "blue",
-            fillOpacity: 0.1,
-          }}
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-      )}
+        <MapClickHandler onMapClick={onMapClick} />
 
-      {/* Center marker */}
-      <Marker position={center} icon={DefaultIcon}>
-        <Popup>Current Location</Popup>
-      </Marker>
+        {/* Show radius circle if provided */}
+        {radius && (
+          <Circle
+            center={center}
+            radius={radius * 1000} // Convert km to meters
+            pathOptions={{
+              color: "blue",
+              fillColor: "blue",
+              fillOpacity: 0.1,
+            }}
+          />
+        )}
 
-      {/* Additional markers */}
-      {markers.map((marker, idx) => (
-        <Marker key={idx} position={marker.position} icon={DefaultIcon}>
-          <Popup>{marker.label}</Popup>
+        {/* Center marker */}
+        <Marker position={center} icon={DefaultIcon}>
+          <Popup>Current Location</Popup>
         </Marker>
-      ))}
-    </MapContainer>
+
+        {/* Additional markers */}
+        {markers.map((marker, idx) => (
+          <Marker key={idx} position={marker.position} icon={DefaultIcon}>
+            <Popup>{marker.label}</Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </Box>
   );
 };
 

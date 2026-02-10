@@ -1,4 +1,4 @@
-import { useStorageState } from "@/storage";
+import { useStorageState } from "@/storage/storage";
 import { LOCAL_STORAGE_KEY } from "@/constants";
 import type { ObservationStatus } from "@/latest-observations/types";
 import { getRandomIndex } from "@/utils";

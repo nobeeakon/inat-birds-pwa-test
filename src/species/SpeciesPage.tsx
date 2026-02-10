@@ -1,55 +1,14 @@
-import { useStorageState } from "@/storage";
 import { useState } from "react";
 import Header from "@/species/Header";
-import { LOCAL_STORAGE_KEY } from "@/constants";
 import { useFetchSpecies } from "@/species/useFetchSpecies";
-import SpeciesCard from "@/species/SpecieCard";
-
+import SpecieCard from "@/species/SpecieCard";
+import { Box, TextField } from "@mui/material";
+import { useCategoriesContext } from "@/CategoriesContext";
+import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
+import EditCategories from "@/species/EditCategories";
+import { notNullish } from "@/utils";
 // TODO use a different photo, selected from the observations
 // TODO add notes in the specie card
-
-type CategoryType = {
-  name: string;
-  taxa: string[];
-};
-type CategoryMapType = Record<string, CategoryType>;
-
-const EditCategories = ({
-  categoriesMap,
-  onAddCategory,
-  onUpdateCategoryName,
-  onDeleteCategory,
-}: {
-  categoriesMap: CategoryMapType;
-  onAddCategory: () => void;
-  onUpdateCategoryName: (categoryId: string, newName: string) => void;
-  onDeleteCategory: (categoryId: string) => void;
-}) => {
-  return (
-    <div>
-      <button onClick={onAddCategory}>Add category</button>
-      <div>
-        {Object.entries(categoriesMap).map(([categoryIdItem, categoryItem]) => (
-          <div key={categoryIdItem}>
-            <label>
-              Name:
-              <input
-                type="text"
-                value={categoryItem.name}
-                onChange={(e) =>
-                  onUpdateCategoryName(categoryIdItem, e.target.value)
-                }
-              />{" "}
-            </label>{" "}
-            <button onClick={() => onDeleteCategory(categoryIdItem)}>
-              delete
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const SpeciesPage = ({
   onShowLatestObservations,
@@ -64,75 +23,43 @@ const SpeciesPage = ({
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
 }) => {
-  const [categories, setCategories] = useStorageState<
-    Record<string, CategoryType>
-  >(LOCAL_STORAGE_KEY.species.speciesCategories, {});
   const [showCategories, setShowCategories] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState("");
 
-  const getSpecieCategories = (taxonId: number) => {
-    const result: { name: string; id: string }[] = [];
-    const stringTaxonId = taxonId.toString();
-    for (const [categoryId, { name, taxa }] of Object.entries(categories)) {
-      if (taxa.includes(stringTaxonId)) {
-        result.push({ name, id: categoryId });
-      }
-    }
-    return result;
+  const categoriesContext = useCategoriesContext();
+  const speciesInfoContext = useSpeciesInfoContext();
+
+  const categories = categoriesContext.state.status === 'success'
+    ? Array.from(categoriesContext.state.data.values())
+    : [];
+
+  const getCategoriesNames = (categoryIds: string[]) => {
+    return categoryIds
+      .map(categoryId => categoriesContext.getCategory(categoryId))
+      .filter(notNullish);
   };
 
-  const onSpecieCategoryChange = (taxonId: number, newCategoryId: string) => {
-    const newCategories = { ...categories };
+  const onSpecieCategoryChange = async (taxonId: number, newCategoryId: string) => {
     const stringTaxonId = taxonId.toString();
+    const existingInfo = speciesInfoContext.getSpeciesInfo(stringTaxonId);
 
-    if (newCategoryId) {
-      let newTaxa = [...newCategories[newCategoryId].taxa];
-      if (newTaxa.includes(stringTaxonId)) {
-        newTaxa = newTaxa.filter(
-          (taxonIdItem) => taxonIdItem !== stringTaxonId
-        );
-      } else {
-        newTaxa.push(stringTaxonId);
-      }
+    let categoryIds = existingInfo?.categoryIds || [];
 
-      newCategories[newCategoryId].taxa = newTaxa;
+    if (categoryIds.includes(newCategoryId)) {
+      // Remove category
+      categoryIds = categoryIds.filter(id => id !== newCategoryId);
     } else {
-      // remove previous
-      for (const { taxa } of Object.values(newCategories)) {
-        const index = taxa.indexOf(stringTaxonId);
-        if (index !== -1) {
-          taxa.splice(index, 1);
-        }
-      }
+      // Add category
+      categoryIds = [...categoryIds, newCategoryId];
     }
 
-    setCategories(newCategories);
+    await speciesInfoContext.updateSpeciesInfo(stringTaxonId, {
+      ...existingInfo,
+      taxonId: stringTaxonId,
+      categoryIds,
+    });
   };
 
-  const onAddCategory = () => {
-    const newCategoryKey = `category-${Date.now()}`;
-    const newCategories = {
-      ...categories,
-      [newCategoryKey]: { name: "", taxa: [] },
-    };
-
-    setCategories(newCategories);
-  };
-
-  const onUpdateCategoryName = (categoryId: string, newName: string) => {
-    const newCategories = { ...categories };
-    newCategories[categoryId].name = newName;
-
-    setCategories(newCategories);
-  };
-
-  const onDeleteCategory = (categoryId: string) => {
-    const newCategories = { ...categories };
-    delete newCategories[categoryId];
-
-    setCategories(newCategories);
-  };
 
   const speciesData = useFetchSpecies(url, 10);
 
@@ -148,14 +75,11 @@ const SpeciesPage = ({
           const includesCommonName = item.taxon.preferred_common_name
             ?.toLowerCase()
             .includes(lowerSearchTerm);
-          const includesCategory = Object.entries(categories).some(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            ([_, categoryItem]) => {
-              return (
-                categoryItem.name.toLowerCase().includes(lowerSearchTerm) &&
-                categoryItem.taxa.includes(item.taxon.id.toString())
-              );
-            }
+
+          const speciesInfo = speciesInfoContext.getSpeciesInfo(item.taxon.id.toString());
+          const categories = getCategoriesNames(speciesInfo?.categoryIds || []);
+          const includesCategory = categories.some(category =>
+            category.name.toLowerCase().includes(lowerSearchTerm)
           );
 
           return includesName || includesCommonName || includesCategory;
@@ -180,35 +104,41 @@ const SpeciesPage = ({
             {speciesData.data?.length || 0})
           </h2>
 
-          <div>
-            <label htmlFor="search-specie">Search</label>
-            <input
-              type="text"
-              id="search-specie"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <TextField
+            label="Search"
+            variant="outlined"
+            size="small"
+            fullWidth
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ mb: 2 }}
+          />
           {showCategories && (
             <EditCategories
-              categoriesMap={categories}
-              onAddCategory={onAddCategory}
-              onUpdateCategoryName={onUpdateCategoryName}
-              onDeleteCategory={onDeleteCategory}
             />
           )}
-          {filteredSpeciesData.map((item) => (
-            <SpeciesCard
-              key={`spp-${item.taxon.id}`}
-              data={item}
-              speciesCategories={getSpecieCategories(item.taxon.id)}
-              allCategories={Object.entries(categories).map(
-                ([id, { name }]) => ({ id, name })
-              )}
-              onCategoryChange={(newCategoryId) => {
-                onSpecieCategoryChange(item.taxon.id, newCategoryId || "");
-              }}
-            />
-          ))}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              justifyContent: { xs: "center", sm: "flex-start" },
+            }}
+          >
+            {filteredSpeciesData.map((item) => {
+              const speciesInfo = speciesInfoContext.getSpeciesInfo(item.taxon.id.toString());
+              return (
+                <SpecieCard
+                  key={`spp-${item.taxon.id}`}
+                  data={item}
+                  speciesCategories={getCategoriesNames(speciesInfo?.categoryIds || [])}
+                  allCategories={categories}
+                  onCategoryChange={(newCategoryId) => {
+                    onSpecieCategoryChange(item.taxon.id, newCategoryId || "");
+                  }}
+                />
+              );
+            })}
+          </Box>
         </div>
       )}
     </div>

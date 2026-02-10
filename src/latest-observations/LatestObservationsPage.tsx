@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { Box, Chip, Stack, Typography } from "@mui/material";
 
 import { useFetchObservations } from "@/latest-observations/useFetchObservations";
-import { useStorageState } from "@/storage";
-import { LOCAL_STORAGE_KEY } from "@/constants";
 import ObservationCard from "@/latest-observations/ObservationCard";
 import Header from "@/latest-observations/Header";
 import type { ObservationStatus } from "@/latest-observations/types";
 import usePreviousObservations from "@/latest-observations/usePreviousObservations";
 import { getRandomIndex } from "@/utils";
+import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 // TODO add an error boundary
 
 const LatestObservationsPage = ({
@@ -26,9 +26,10 @@ const LatestObservationsPage = ({
   const query = useFetchObservations(url);
   const [indices, setIndices] = useState([0]);
   const [showEditExcludedTaxa, setShowEditExcludedTaxa] = useState(false);
-  const [taxaToExclude, setTaxaToExclude] = useStorageState<
-    Record<string, string>
-  >(LOCAL_STORAGE_KEY.EXCLUDED_TAXA_STORAGE_KEY, {});
+  const { state, updateSpeciesInfo, getSpeciesInfo } = useSpeciesInfoContext();
+
+  const speciesInfo = state.status === 'success' ? state.data : null;
+  const speciesToExclude = speciesInfo ? Array.from(speciesInfo.values()).filter(info => info.exclude) : [];
 
   const {
     previousObservations,
@@ -37,7 +38,7 @@ const LatestObservationsPage = ({
   } = usePreviousObservations();
 
   const filteredData = query.data?.filter(
-    (item) => !(item.taxon.id in taxaToExclude)
+    (item) => !getSpeciesInfo(item.taxon.id.toString())?.exclude
   );
 
   const onNext = () => {
@@ -85,14 +86,18 @@ const LatestObservationsPage = ({
 
   const onExcludeTaxa = () => {
     const dataItem = (filteredData ?? [])[indices[indices.length - 1]];
+    const existingInfo = getSpeciesInfo(dataItem.taxon.id.toString());
     if (!dataItem) return;
 
-    const newTaxaToExclude = {
-      ...taxaToExclude,
-      [dataItem.taxon.id]: dataItem.taxon.name,
-    };
-
-    setTaxaToExclude(newTaxaToExclude);
+    updateSpeciesInfo(
+      dataItem.taxon.id.toString(),
+      {
+        ...(existingInfo ?? {}),
+        taxonId: dataItem.taxon.id.toString(),
+        speciesName: dataItem.taxon.name,
+        exclude: true,
+      }
+    );
 
     // Move to next item
     onNext();
@@ -116,47 +121,43 @@ const LatestObservationsPage = ({
   const dataItem = (filteredData ?? [])[currendIdx];
 
   return (
-    <>
-      <div>
-        <Header
-          onExcludeTaxa={onExcludeTaxa}
-          currentLocationId={currentLocationId}
-          updateLocation={handleUpdateLocation}
-          toggleEditExcludedTaxa={() =>
-            setShowEditExcludedTaxa(!showEditExcludedTaxa)
-          }
-          onShowSpecies={onShowSpecies}
-          onShowLocations={onShowLocations}
-        />
-      </div>
+    <Box>
+      <Header
+        onExcludeTaxa={onExcludeTaxa}
+        currentLocationId={currentLocationId}
+        updateLocation={handleUpdateLocation}
+        toggleEditExcludedTaxa={() =>
+          setShowEditExcludedTaxa(!showEditExcludedTaxa)
+        }
+        onShowSpecies={onShowSpecies}
+        onShowLocations={onShowLocations}
+      />
 
       {showEditExcludedTaxa && (
-        <div>
-          {Object.entries(taxaToExclude).map(([taxonId, taxonName]) => (
-            <div
-              key={taxonId}
-              style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-            >
-              <span>{taxonName}</span>
-              <button
-                onClick={() => {
-                  const newTaxaToExclude = { ...taxaToExclude };
-                  delete newTaxaToExclude[taxonId];
-                  setTaxaToExclude(newTaxaToExclude);
+        <Box sx={{ my: 2 }}>
+          <Stack spacing={1}>
+            {speciesToExclude.map((info) => (
+              <Chip
+                key={info.taxonId}
+                label={info.speciesName}
+                onDelete={() => {
+                  updateSpeciesInfo(info.taxonId, {
+                    ...info,
+                    exclude: undefined,
+                  });
                 }}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
+                sx={{ justifyContent: "space-between" }}
+              />
+            ))}
+          </Stack>
+        </Box>
       )}
 
-      <div>
-        {query.loading && <p>Cargando...</p>}
-        {query.error && <p>Hubo un error</p>}
+      <Box>
+        {query.loading && <Typography>Cargando...</Typography>}
+        {query.error && <Typography>Hubo un error</Typography>}
         {!dataItem ? (
-          <div>--</div>
+          <Typography>--</Typography>
         ) : (
           <ObservationCard
             key={`card-observation-${currendIdx}`}
@@ -167,8 +168,8 @@ const LatestObservationsPage = ({
             onPrevious={onPrevious}
           />
         )}
-      </div>
-    </>
+      </Box>
+    </Box>
   );
 };
 
