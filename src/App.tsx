@@ -54,19 +54,16 @@ const App = () => {
               currentLocationId={currentLocationId}
               onShowSpecies={() => setPage("species")}
               onShowLocations={() => setPage("locations")}
-              url={getUrl({
-                type: "observations",
-                lat: currentLocation.lat,
-                lng: currentLocation.lng,
-                radius: currentLocation.radius,
-              })}
+              lat={currentLocation.lat}
+              lng={currentLocation.lng}
+              radius={currentLocation.radius}
               updateLocation={(newLocation) =>
                 setCurrentLocationId(newLocation)
               }
             />
           </div>
           <div className={page === "species" ? "" : "hidden"}>
-            <SpeciesPage
+            {/* <SpeciesPage
               onShowLatestObservations={() => setPage("observations")}
               onShowLocations={() => setPage("locations")}
               currentLocationId={currentLocationId}
@@ -79,7 +76,7 @@ const App = () => {
               updateLocation={(newLocation) =>
                 setCurrentLocationId(newLocation)
               }
-            />
+            /> */}
           </div>
         </>
       )}

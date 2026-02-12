@@ -14,16 +14,20 @@ const LatestObservationsPage = ({
   currentLocationId,
   onShowSpecies,
   onShowLocations,
-  url,
+  lat,
+  lng,
+  radius,
   updateLocation,
 }: {
   currentLocationId: string;
   onShowSpecies: () => void;
   onShowLocations: () => void;
-  url: string;
+  lat: number;
+  lng: number;
+  radius: number;
   updateLocation: (newLocationId: string) => void;
 }) => {
-  const query = useFetchObservations(url);
+  const query = useFetchObservations({ lat, lng, radius });
   const [indices, setIndices] = useState([0]);
   const [showEditExcludedTaxa, setShowEditExcludedTaxa] = useState(false);
   const { state, updateSpeciesInfo, getSpeciesInfo } = useSpeciesInfoContext();

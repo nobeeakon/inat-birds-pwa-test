@@ -59,7 +59,7 @@ const fetchSpecies = async (url: string, numberOfPages: number) => {
   const result = [];
 
   for (let page = 1; page <= numberOfPages; page++) {
-    await sleep(1500); // ok to do this since is going to happen in the background
+    await sleep(3500); // ok to do this since is going to happen in the background
     const pageUrl = parseURLWithPage(url, page);
     const data = await fetchData<ResponseType>(parseURLWithPage(pageUrl, page));
 

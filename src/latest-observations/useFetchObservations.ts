@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
+import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
+import type { SpeciesData } from "@/species/useFetchSpecies";
 
 export type ObservationType = {
   uuid: string;
@@ -65,6 +67,8 @@ type ResponseType = {
   results: ObservationType[];
 };
 
+const MIN_SLEEP_MS = 500;
+
 const parseURLWithPage = (url: string, page: number) => {
   // example URL:
   //  https://api.inaturalist.org/v2/observations?verifiable=true&order_by=id&order=desc&page=7&spam=false&lat=20.54454801218982&lng=-100.38172842219655&radius=24.739610563075544&locale=es-MX&preferred_place_id=6793&iconic_taxa%5B%5D=Aves&per_page=24&no_total_hits=true&fields=(comments_count%3A!t%2Ccreated_at%3A!t%2Ccreated_at_details%3Aall%2Ccreated_time_zone%3A!t%2Cfaves_count%3A!t%2Cgeoprivacy%3A!t%2Cid%3A!t%2Cidentifications%3A(current%3A!t)%2Cidentifications_count%3A!t%2Clocation%3A!t%2Cmappable%3A!t%2Cobscured%3A!t%2Cobserved_on%3A!t%2Cobserved_on_details%3Aall%2Cobserved_time_zone%3A!t%2Cphotos%3A(id%3A!t%2Curl%3A!t)%2Cplace_guess%3A!t%2Cprivate_geojson%3A!t%2Cquality_grade%3A!t%2Csounds%3A(id%3A!t)%2Ctaxon%3A(iconic_taxon_id%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t)%2Ctime_observed_at%3A!t%2Cuser%3A(icon_url%3A!t%2Cid%3A!t%2Clogin%3A!t))
@@ -89,10 +93,15 @@ const selectRandomNumbers = (size: number, max: number = 100) => {
   return selectedNumbers;
 };
 
-export const useFetchObservations = (
-  url: string,
-  numberOfPages: number = 10
-) => {
+export const useFetchObservations = ({
+  lat,
+  lng,
+  radius,
+}: {
+  lat: number;
+  lng: number;
+  radius: number;
+}) => {
   const [queries, setQueries] = useState<{
     loading: boolean;
     data: null | ObservationType[];
@@ -101,28 +110,80 @@ export const useFetchObservations = (
 
   useEffect(() => {
     const fetchPagesData = async () => {
-      if (!url) {
+      if (!lat || !lng || !radius) {
         setQueries({ loading: false, data: null, error: null });
+        return;
       }
 
-      const queries = selectRandomNumbers(9, 120).map((page) =>
-        fetchData<ResponseType>(parseURLWithPage(url, page))
-      );
-
       setQueries({ loading: true, data: null, error: null });
+
       try {
-        const data = await Promise.all(queries);
 
-        const items = data
-          .map((dataItem) => dataItem.results)
-          .flat()
-          .filter(
-            (observation) =>
-              observation.quality_grade === "research" &&
-              observation.photos.length > 0
-          );
+        const speciesUrl = getUrl({ type: 'species', lat, lng, radius });
+        const speciesPages = selectRandomNumbers(2, 120);
 
-        setQueries({ loading: false, data: items, error: null });
+        const speciesData: { results: SpeciesData[] }[] = [];
+        for (const page of [0,...speciesPages]) {
+          await sleep(MIN_SLEEP_MS);
+          const data = await fetchData<{ results: SpeciesData[] }>(parseURLWithPage(speciesUrl, page));
+          speciesData.push(data);
+        }
+
+        const allSpecies = speciesData
+          .flatMap((d) => d.results)
+          .filter(notNullish);
+
+        const filteredSpecies =  selectRandomNumbers(15, allSpecies.length).map((idx) => allSpecies[idx]).filter(notNullish);
+
+        // Stage 2: Fetch observations per species
+        const allObservations: ObservationType[] = [];
+
+        for (const speciesItem of filteredSpecies) {
+          await sleep(MIN_SLEEP_MS); // Prevent rate limiting
+
+          const obsPages = selectRandomNumbers(2, 120);
+
+          const obsData: ResponseType[] = [];
+          for (const page of obsPages) {
+            await sleep(MIN_SLEEP_MS);
+            const data = await fetchData<ResponseType>(
+              parseURLWithPage(
+                getObservationsUrlForTaxon({
+                  lat,
+                  lng,
+                  radius,
+                  taxonId: speciesItem.taxon.id,
+                }),
+                page
+              )
+            );
+            obsData.push(data);
+          }
+          const observations = obsData
+            .flatMap((d) => d.results)
+            .filter(
+              (obs) =>
+                obs.quality_grade === "research" && obs.photos.length > 0
+            );
+
+          // Select 5 random observations
+          const selectedObs = selectRandomNumbers(
+            Math.min(5, observations.length),
+            observations.length
+          )
+            .map((idx) => observations[idx])
+            .filter(notNullish);
+
+          allObservations.push(...selectedObs);
+        }
+
+        // Stage 3: Randomize final observations
+        const shuffled = allObservations
+          .map((obs) => ({ obs, sort: Math.random() }))
+          .sort((a, b) => a.sort - b.sort)
+          .map(({ obs }) => obs);
+
+        setQueries({ loading: false, data: shuffled, error: null });
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
         setQueries({ loading: false, data: null, error: true });
@@ -130,7 +191,7 @@ export const useFetchObservations = (
     };
 
     fetchPagesData();
-  }, [numberOfPages, url]);
+  }, [lat, lng, radius]);
 
   return queries;
 };
