@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -222,7 +223,11 @@ const LocationsPage = ({
             <TableBody>
               {locationsInfo.map((locationItem, index) => (
                 <TableRow key={locationItem.id}>
-                  <TableCell>{locationItem.name}</TableCell>
+                  <TableCell>
+                    <Link to={`/observations?location=${locationItem.id}`}>
+                      {locationItem.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{locationItem.radius}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>

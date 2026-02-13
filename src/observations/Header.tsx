@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   Stack,
   Button,
@@ -23,14 +24,12 @@ const Header = ({
   onExcludeTaxa,
   toggleEditExcludedTaxa,
   onShowSpecies,
-  onShowLocations,
 }: {
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
   onExcludeTaxa: () => void;
   toggleEditExcludedTaxa: () => void;
   onShowSpecies: () => void;
-  onShowLocations: () => void;
 }) => {
   const { t } = useTranslation();
   const [showConfig, setShowConfig] = useState(false);
@@ -79,7 +78,9 @@ const Header = ({
               ))}
             </Select>
           </FormControl>
-          <Button onClick={onShowLocations}>{t("editLocations")}</Button>
+          <Button component={Link} to="/locations">
+            {t("editLocations")}
+          </Button>
           <Button onClick={toggleEditExcludedTaxa}>
             {t("excludeSpecies")}
           </Button>

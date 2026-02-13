@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   Stack,
   Button,
@@ -16,13 +17,11 @@ const Header = ({
   currentLocationId,
   updateLocation,
   onShowObservations,
-  onShowLocations,
   onEditCategories,
 }: {
   currentLocationId: string;
   updateLocation: (locationId: string) => void;
   onShowObservations: () => void;
-  onShowLocations: () => void;
   onEditCategories: () => void;
 }) => {
   const { t } = useTranslation();
@@ -69,7 +68,9 @@ const Header = ({
               ))}
             </Select>
           </FormControl>
-          <Button onClick={onShowLocations}>{t("editLocations")}</Button>
+          <Button component={Link} to="/locations">
+            {t("editLocations")}
+          </Button>
           <Button onClick={onEditCategories}>{t("editCategories")}</Button>
         </Box>
       )}

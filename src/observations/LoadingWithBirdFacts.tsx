@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 const LoadingWithBirdFacts = () => {
   const { t } = useTranslation();
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
 
   const birdFacts = [
     t("birdFacts.fact1"),
@@ -19,8 +20,12 @@ const LoadingWithBirdFacts = () => {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      setCurrentFactIndex((prevIndex) => (prevIndex + 1) % birdFacts.length);
-    }, 3500);
+      setIsExiting(true);
+      setTimeout(() => {
+        setCurrentFactIndex((prevIndex) => (prevIndex + 1) % birdFacts.length);
+        setIsExiting(false);
+      }, 500);
+    }, 4000);
 
     return () => clearInterval(intervalId);
   }, [birdFacts.length]);
@@ -37,17 +42,53 @@ const LoadingWithBirdFacts = () => {
       }}
     >
       <CircularProgress size={48} />
-      <Typography
-        variant="body1"
+      <Box
         sx={{
-          textAlign: "center",
-          maxWidth: "400px",
+          maxWidth: "300px",
+          width: "100%",
           minHeight: "3em",
           px: 2,
+          overflow: "hidden",
+          position: "relative",
         }}
       >
-        {birdFacts[currentFactIndex]}
-      </Typography>
+        <Typography
+          key={currentFactIndex}
+          variant="body1"
+          sx={{
+            textAlign: "center",
+            animation: isExiting
+              ? "slideOutRight 0.5s ease-in forwards"
+              : "slideInLeft 0.5s ease-out",
+            "@keyframes slideInLeft": {
+              "0%": {
+                opacity: 0,
+                transform: "translateX(-100%)",
+              },
+              "70%": {
+                opacity: 1,
+              },
+              "100%": {
+                transform: "translateX(0)",
+              },
+            },
+            "@keyframes slideOutRight": {
+              "0%": {
+                opacity: 1,
+                transform: "translateX(0)",
+              },
+              "70%": {
+                opacity: 0,
+              },
+              "100%": {
+                transform: "translateX(100%)",
+              },
+            },
+          }}
+        >
+          {birdFacts[currentFactIndex]}
+        </Typography>
+      </Box>
     </Box>
   );
 };

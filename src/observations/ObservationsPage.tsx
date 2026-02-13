@@ -101,7 +101,6 @@ const selectNextIndex = (
 const ObservationsPage = ({
   currentLocationId,
   onShowSpecies,
-  onShowLocations,
   lat,
   lng,
   radius,
@@ -109,7 +108,6 @@ const ObservationsPage = ({
 }: {
   currentLocationId: string;
   onShowSpecies: () => void;
-  onShowLocations: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -215,7 +213,6 @@ const ObservationsPage = ({
           setShowEditExcludedTaxa(!showEditExcludedTaxa)
         }
         onShowSpecies={onShowSpecies}
-        onShowLocations={onShowLocations}
       />
 
       {showEditExcludedTaxa && (

@@ -14,7 +14,6 @@ import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
 
 const SpeciesPage = ({
   onShowObservations,
-  onShowLocations,
   lat,
   lng,
   radius,
@@ -22,7 +21,6 @@ const SpeciesPage = ({
   updateLocation,
 }: {
   onShowObservations: () => void;
-  onShowLocations: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -103,7 +101,6 @@ const SpeciesPage = ({
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
         onShowObservations={onShowObservations}
-        onShowLocations={onShowLocations}
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
@@ -161,7 +158,6 @@ const SpeciesPage = ({
 // Wrapper to delay SpeciesPage load by 5 seconds to prevent iNaturalist API rate limiting
 const SpeciesPageWrapper = ({
   onShowObservations,
-  onShowLocations,
   lat,
   lng,
   radius,
@@ -169,7 +165,6 @@ const SpeciesPageWrapper = ({
   updateLocation,
 }: {
   onShowObservations: () => void;
-  onShowLocations: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -193,7 +188,6 @@ const SpeciesPageWrapper = ({
   return (
     <SpeciesPage
       onShowObservations={onShowObservations}
-      onShowLocations={onShowLocations}
       lat={lat}
       lng={lng}
       radius={radius}
