@@ -1,4 +1,4 @@
 export type ObservationStatus =
   | "identified"
   | "unidentified"
-  | "sorOfIdentified";
+  | "sortOfIdentified";

@@ -1,9 +1,11 @@
 import { Box, Button, TextField, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useState } from "react";
 
 const EditCategories = () => {
+  const { t } = useTranslation();
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
 
@@ -37,7 +39,7 @@ const EditCategories = () => {
       );
 
       if (speciesUsingCategory.length > 0) {
-        setDeleteDialogMessage(`Cannot delete category: ${speciesUsingCategory.length} species are using it`);
+        setDeleteDialogMessage(t("cannotDeleteCategory", { count: speciesUsingCategory.length }));
         return;
       }
     }
@@ -48,7 +50,7 @@ const EditCategories = () => {
   return (<>
     <Box sx={{ mb: 2 }}>
       <Button variant="contained" onClick={onAddCategory} sx={{ mb: 2 }}>
-        Add category
+        {t("addCategory")}
       </Button>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {categories.map((categoryItem) => (
@@ -57,7 +59,7 @@ const EditCategories = () => {
             sx={{ display: "flex", alignItems: "center", gap: 1 }}
           >
             <TextField
-              label="Name"
+              label={t("name")}
               size="small"
               value={categoryItem.name}
               onChange={(e) =>
@@ -70,7 +72,7 @@ const EditCategories = () => {
               size="small"
               onClick={() => onDeleteCategory(categoryItem.id)}
             >
-              Delete
+              {t("delete")}
             </Button>
           </Box>
         ))}
@@ -80,12 +82,12 @@ const EditCategories = () => {
         open={deleteDialogMessage !== ""}
         onClose={() => setDeleteDialogMessage("")}
       >
-        <DialogTitle>Cannot Delete Category</DialogTitle>
+        <DialogTitle>{t("cannotDeleteCategoryTitle")}</DialogTitle>
         <DialogContent>
           <DialogContentText>{deleteDialogMessage}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogMessage("")}>OK</Button>
+          <Button onClick={() => setDeleteDialogMessage("")}>{t("ok")}</Button>
         </DialogActions>
       </Dialog>
     </>

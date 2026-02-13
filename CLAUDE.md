@@ -10,6 +10,13 @@ Birds iNaturalist PWA - A Progressive Web App for tracking bird observations fro
 
 **Communication Style**: Keep explanations concise, brief, and straight to the point.
 
+## Workflow Requirements
+
+**After Code Changes**: Always complete these steps after any code modifications:
+1. Run `pnpm run format` to format the code
+2. Run `pnpm lint` to check for linting issues
+3. Run `pnpm build` to verify the build succeeds
+
 ## Development Commands
 
 ```bash
@@ -66,6 +73,12 @@ Three-page SPA with manual page state management (no router):
 ### Key Technical Details
 
 **Path Alias**: `@` resolves to `src/` (configured in [vite.config.ts](vite.config.ts))
+
+**TypeScript**:
+- Use `type` instead of `interface` for type definitions
+- Non-null assertion operator (`!`) is disallowed by ESLint rule
+
+**Comments**: Keep comments brief. Prefer descriptive variable/function names over long comments. No `@param` tags - TypeScript types already document parameters.
 
 **i18n**: English/Spanish translations via i18next ([src/i18n.ts](src/i18n.ts), [src/locales/](src/locales/))
 

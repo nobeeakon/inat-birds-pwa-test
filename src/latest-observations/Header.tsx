@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Stack,
   Button,
@@ -31,6 +32,7 @@ const Header = ({
   onShowSpecies: () => void;
   onShowLocations: () => void;
 }) => {
+  const { t } = useTranslation();
   const [showConfig, setShowConfig] = useState(false);
   const locations = useLocationsContext().locationsInfo;
 
@@ -38,13 +40,13 @@ const Header = ({
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
         <Button variant="contained" onClick={onShowSpecies}>
-          Species
+          {t("species")}
         </Button>
         <Button variant="outlined" onClick={onExcludeTaxa}>
-          Excluir
+          {t("exclude")}
         </Button>
         <Button variant="outlined" onClick={() => setShowConfig(!showConfig)}>
-          Config
+          {t("config")}
         </Button>
       </Stack>
       {showConfig && (
@@ -61,15 +63,15 @@ const Header = ({
           }}
         >
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel id="url-selector-label">Data</InputLabel>
+            <InputLabel id="url-selector-label">{t("data")}</InputLabel>
             <Select
               labelId="url-selector-label"
               id="url-selector"
               value={currentLocationId}
-              label="Data"
+              label={t("data")}
               onChange={(e) => updateLocation(e.target.value)}
             >
-              <MenuItem value="">Select Location</MenuItem>
+              <MenuItem value="">{t("selectLocation")}</MenuItem>
               {locations.map((locationItem) => (
                 <MenuItem key={locationItem.id} value={locationItem.id}>
                   {locationItem.name}
@@ -77,8 +79,8 @@ const Header = ({
               ))}
             </Select>
           </FormControl>
-          <Button onClick={onShowLocations}>Edit locations</Button>
-          <Button onClick={toggleEditExcludedTaxa}>Excluir spp.</Button>
+          <Button onClick={onShowLocations}>{t("editLocations")}</Button>
+          <Button onClick={toggleEditExcludedTaxa}>{t("excludeSpecies")}</Button>
         </Box>
       )}
     </Box>

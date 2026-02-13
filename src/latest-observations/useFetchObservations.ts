@@ -67,16 +67,10 @@ type ResponseType = {
   results: ObservationType[];
 };
 
-const MIN_SLEEP_MS = 500;
-
-const parseURLWithPage = (url: string, page: number) => {
-  // example URL:
-  //  https://api.inaturalist.org/v2/observations?verifiable=true&order_by=id&order=desc&page=7&spam=false&lat=20.54454801218982&lng=-100.38172842219655&radius=24.739610563075544&locale=es-MX&preferred_place_id=6793&iconic_taxa%5B%5D=Aves&per_page=24&no_total_hits=true&fields=(comments_count%3A!t%2Ccreated_at%3A!t%2Ccreated_at_details%3Aall%2Ccreated_time_zone%3A!t%2Cfaves_count%3A!t%2Cgeoprivacy%3A!t%2Cid%3A!t%2Cidentifications%3A(current%3A!t)%2Cidentifications_count%3A!t%2Clocation%3A!t%2Cmappable%3A!t%2Cobscured%3A!t%2Cobserved_on%3A!t%2Cobserved_on_details%3Aall%2Cobserved_time_zone%3A!t%2Cphotos%3A(id%3A!t%2Curl%3A!t)%2Cplace_guess%3A!t%2Cprivate_geojson%3A!t%2Cquality_grade%3A!t%2Csounds%3A(id%3A!t)%2Ctaxon%3A(iconic_taxon_id%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t)%2Ctime_observed_at%3A!t%2Cuser%3A(icon_url%3A!t%2Cid%3A!t%2Clogin%3A!t))
-
-  const newUrl = new URL(url);
-  newUrl.searchParams.set("page", page.toString());
-  return newUrl.toString();
-};
+const MIN_SLEEP_MS = 1000;
+const PAGE_SIZE = 10;
+const SPECIES_NUMBER = 15;
+const MAX_HEURISTIC_PAGE = 20; // Heuristic max pages for random selection
 
 const selectRandomNumbers = (size: number, max: number = 100) => {
   const numbers = new Set(Array(max).keys());
@@ -118,14 +112,22 @@ export const useFetchObservations = ({
       setQueries({ loading: true, data: null, error: null });
 
       try {
+        // Stage 1: Get total results to calculate max pages
+        const initialUrl = getUrl({ type: 'species', lat, lng, radius, perPage: 1, page: 0 });
+        const initialData = await fetchData<{ total_results: number; results: SpeciesData[] }>(
+          initialUrl
+        );
 
-        const speciesUrl = getUrl({ type: 'species', lat, lng, radius });
-        const speciesPages = selectRandomNumbers(2, 120);
+        const maxPages = Math.ceil(initialData.total_results / PAGE_SIZE);
+
+        const numberOfPagesToFetch = Math.ceil(SPECIES_NUMBER / PAGE_SIZE);
+        const speciesPages = selectRandomNumbers(numberOfPagesToFetch, maxPages);
 
         const speciesData: { results: SpeciesData[] }[] = [];
-        for (const page of [0,...speciesPages]) {
+        for (const page of speciesPages) {
           await sleep(MIN_SLEEP_MS);
-          const data = await fetchData<{ results: SpeciesData[] }>(parseURLWithPage(speciesUrl, page));
+          const speciesUrl = getUrl({ type: 'species', lat, lng, radius, perPage: PAGE_SIZE, page });
+          const data = await fetchData<{ results: SpeciesData[] }>(speciesUrl);
           speciesData.push(data);
         }
 
@@ -133,38 +135,46 @@ export const useFetchObservations = ({
           .flatMap((d) => d.results)
           .filter(notNullish);
 
-        const filteredSpecies =  selectRandomNumbers(15, allSpecies.length).map((idx) => allSpecies[idx]).filter(notNullish);
+        const filteredSpecies =  selectRandomNumbers(SPECIES_NUMBER, allSpecies.length).map((idx) => allSpecies[idx]).filter(notNullish);
 
         // Stage 2: Fetch observations per species
         const allObservations: ObservationType[] = [];
+        const observationRadius = radius + 250; // Increased radius to get more observations per species
 
         for (const speciesItem of filteredSpecies) {
           await sleep(MIN_SLEEP_MS); // Prevent rate limiting
 
-          const obsPages = selectRandomNumbers(2, 120);
+          // Heuristic: Pick random page from 0 to MAX_HEURISTIC_PAGE
+          const randomPage = Math.floor(Math.random() * MAX_HEURISTIC_PAGE);
 
-          const obsData: ResponseType[] = [];
-          for (const page of obsPages) {
+          const obsUrl = getObservationsUrlForTaxon({
+            lat,
+            lng,
+            radius: observationRadius,
+            taxonId: speciesItem.taxon.id,
+            perPage: 30,
+            page: randomPage,
+          });
+
+          let obsData = await fetchData<ResponseType>(obsUrl);
+
+          // Fallback: if page is empty (rare species), try page 0
+          if (obsData.results.length === 0) {
             await sleep(MIN_SLEEP_MS);
-            const data = await fetchData<ResponseType>(
-              parseURLWithPage(
-                getObservationsUrlForTaxon({
-                  lat,
-                  lng,
-                  radius,
-                  taxonId: speciesItem.taxon.id,
-                }),
-                page
-              )
-            );
-            obsData.push(data);
+            const fallbackUrl = getObservationsUrlForTaxon({
+              lat,
+              lng,
+              radius: observationRadius,
+              taxonId: speciesItem.taxon.id,
+              perPage: 30,
+              page: 0,
+            });
+            obsData = await fetchData<ResponseType>(fallbackUrl);
           }
-          const observations = obsData
-            .flatMap((d) => d.results)
-            .filter(
-              (obs) =>
-                obs.quality_grade === "research" && obs.photos.length > 0
-            );
+
+          const observations = obsData.results.filter(
+            (obs) => obs.quality_grade === "research" && obs.photos.length > 0
+          );
 
           // Select 5 random observations
           const selectedObs = selectRandomNumbers(

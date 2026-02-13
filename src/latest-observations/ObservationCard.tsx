@@ -56,7 +56,7 @@ const ObservationCard = ({
         <Button
           fullWidth
           variant="contained"
-          onClick={() => onNext("sorOfIdentified")}
+          onClick={() => onNext("sortOfIdentified")}
         >
           Bien
         </Button>

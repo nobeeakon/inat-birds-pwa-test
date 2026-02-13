@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box } from "@mui/material";
 
 import LatestObservationsPage from "@/latest-observations/LatestObservationsPage";
@@ -13,6 +14,7 @@ import SpeciesInfoContextProvider from "@/SpeciesInfoContext";
 import "./App.css";
 
 const App = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState<"observations" | "species" | "locations">(
     "observations"
   );
@@ -44,7 +46,7 @@ const App = () => {
   return (
     <Box sx={{ px: 2 }}>
       {!currentLocationId || !currentLocation ? (
-        <div>Please select a location in Species Page</div>
+        <div>{t("pleaseSelectLocation")}</div>
       ) : (
         <>
           <div className={page === "observations" ? "" : "hidden"}>

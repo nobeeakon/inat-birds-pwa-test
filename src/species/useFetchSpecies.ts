@@ -6,7 +6,7 @@ type Photo = {
   id: number;
   square_url: string;
   attribution?: string;
-  license_code?: string;
+  license_code?: string | null;
   medium_url?: string;
   url?: string;
 };
@@ -17,7 +17,7 @@ type Taxon = {
   iconic_taxon_name: string;
   is_active: boolean;
   name: string;
-  preferred_common_name: string;
+  preferred_common_name?: string;
   rank: string;
   rank_level: number;
 };
@@ -33,9 +33,12 @@ export type SpeciesData = {
     iconic_taxon_name: string;
     is_active: boolean;
     name: string;
-    preferred_common_name: string;
+    preferred_common_name?: string;
     rank: string;
     rank_level: number;
+    establishment_means?: {
+      establishment_means: string;
+    };
   };
 };
 

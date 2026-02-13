@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Header from "@/species/Header";
 import { useFetchSpecies } from "@/species/useFetchSpecies";
 import SpecieCard from "@/species/SpecieCard";
@@ -23,6 +24,7 @@ const SpeciesPage = ({
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
 }) => {
+  const { t } = useTranslation();
   const [showCategories, setShowCategories] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -95,17 +97,17 @@ const SpeciesPage = ({
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
-      {speciesData.loading && <div>Loading...</div>}
-      {speciesData.error && <div>Error</div>}
+      {speciesData.loading && <div>{t("loading")}</div>}
+      {speciesData.error && <div>{t("error")}</div>}
       {filteredSpeciesData && (
         <div>
           <h2>
-            Species Data ({filteredSpeciesData.length} /{" "}
+            {t("speciesData")} ({filteredSpeciesData.length} /{" "}
             {speciesData.data?.length || 0})
           </h2>
 
           <TextField
-            label="Search"
+            label={t("search")}
             variant="outlined"
             size="small"
             fullWidth
