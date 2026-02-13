@@ -1,11 +1,18 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 
 import { categoriesStore, type Category } from "@/storage/db";
 
 type CategoriesState =
-  | { status: 'loading' }
-  | { status: 'error', error: Error }
-  | { status: 'success', data: Map<string, Category> };
+  | { status: "loading" }
+  | { status: "error"; error: Error }
+  | { status: "success"; data: Map<string, Category> };
 
 type CategoriesContextType = {
   state: CategoriesState;
@@ -16,7 +23,7 @@ type CategoriesContextType = {
 };
 
 const CategoriesContext = createContext<CategoriesContextType>({
-  state: { status: 'loading' },
+  state: { status: "loading" },
   addCategory: async () => {
     throw new Error("addCategory not implemented");
   },
@@ -43,27 +50,30 @@ export const useCategoriesContext = () => {
 };
 
 const CategoriesContextProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<CategoriesState>({ status: 'loading' });
+  const [state, setState] = useState<CategoriesState>({ status: "loading" });
   const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Load categories on mount and when refreshCounter changes
   useEffect(() => {
     const loadCategories = async () => {
-      setState({ status: 'loading' });
+      setState({ status: "loading" });
       try {
         const storedCategories = await categoriesStore.getAll();
         const categoriesMap = new Map<string, Category>();
         if (storedCategories) {
-          storedCategories.forEach(category => {
+          storedCategories.forEach((category) => {
             categoriesMap.set(category.id, category);
           });
         }
-        setState({ status: 'success', data: categoriesMap });
+        setState({ status: "success", data: categoriesMap });
       } catch (error) {
         console.error("Failed to load categories from IndexedDB:", error);
         setState({
-          status: 'error',
-          error: error instanceof Error ? error : new Error('Unknown error loading categories')
+          status: "error",
+          error:
+            error instanceof Error
+              ? error
+              : new Error("Unknown error loading categories"),
         });
       }
     };
@@ -100,12 +110,15 @@ const CategoriesContextProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const getCategory = useCallback((categoryId: string): Category | undefined => {
-    if (state.status === 'success') {
-      return state.data.get(categoryId);
-    }
-    return undefined;
-  }, [state]);
+  const getCategory = useCallback(
+    (categoryId: string): Category | undefined => {
+      if (state.status === "success") {
+        return state.data.get(categoryId);
+      }
+      return undefined;
+    },
+    [state]
+  );
 
   const value = {
     state,

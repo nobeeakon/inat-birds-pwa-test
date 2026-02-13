@@ -13,7 +13,7 @@ export type SpecieInfo = {
   categoryIds?: string[];
   preferredSpeciesImage?: string;
   similarSpeciesIds?: string[];
-}
+};
 
 // Database interfaces
 export type CachedSpeciesInfo = {
@@ -33,8 +33,9 @@ interface BirdsDB extends DBSchema {
     key: string; // id
     value: Category;
   };
- 
-  speciesNotes: {  // Old store name for migration
+
+  speciesNotes: {
+    // Old store name for migration
     key: string; // id
     value: CachedSpeciesInfo;
     indexes: { timestamp: number };
@@ -114,7 +115,7 @@ export const speciesInfoStore = {
   getAll: async (): Promise<CachedSpeciesInfo[]> => {
     const db = await getDB();
     return await db.getAll("speciesInfo");
-  }
+  },
 };
 
 export const categoriesStore = {
@@ -133,5 +134,5 @@ export const categoriesStore = {
   delete: async (id: string): Promise<void> => {
     const db = await getDB();
     await db.delete("categories", id);
-  }
+  },
 };

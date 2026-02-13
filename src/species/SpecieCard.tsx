@@ -77,15 +77,19 @@ const SpecieCard = ({
         component="img"
         image={imageUrl}
         alt={data.taxon.name}
-        sx={{ width: "100%", height: "auto", aspectRatio: "4/3", objectFit: "cover" }}
+        sx={{
+          width: "100%",
+          height: "auto",
+          aspectRatio: "4/3",
+          objectFit: "cover",
+        }}
       />
       <CardContent>
         <Typography>
           <strong>
             <i>{data.taxon.name}</i>
           </strong>{" "}
-          ({data.taxon.preferred_common_name})
-          <span> [{data.count}]</span>
+          ({data.taxon.preferred_common_name})<span> [{data.count}]</span>
         </Typography>
 
         {!!speciesCategories?.length && (

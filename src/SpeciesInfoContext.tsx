@@ -1,11 +1,18 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 
 import { speciesInfoStore, type SpecieInfo } from "@/storage/db";
 
 type SpeciesInfoState =
-  | { status: 'loading' }
-  | { status: 'error', error: Error }
-  | { status: 'success', data: Map<string, SpecieInfo> };
+  | { status: "loading" }
+  | { status: "error"; error: Error }
+  | { status: "success"; data: Map<string, SpecieInfo> };
 
 type SpeciesInfoContextType = {
   state: SpeciesInfoState;
@@ -14,7 +21,7 @@ type SpeciesInfoContextType = {
 };
 
 const SpeciesInfoContext = createContext<SpeciesInfoContextType>({
-  state: { status: 'loading' },
+  state: { status: "loading" },
   updateSpeciesInfo: async () => {
     throw new Error("updateSpeciesInfo not implemented");
   },
@@ -35,49 +42,58 @@ export const useSpeciesInfoContext = () => {
 };
 
 const SpeciesInfoContextProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<SpeciesInfoState>({ status: 'loading' });
+  const [state, setState] = useState<SpeciesInfoState>({ status: "loading" });
   const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Load species info on mount and when refreshCounter changes
   useEffect(() => {
     const loadSpeciesInfo = async () => {
-      setState({ status: 'loading' });
+      setState({ status: "loading" });
       try {
         const storedInfo = await speciesInfoStore.getAll();
         const speciesMap = new Map<string, SpecieInfo>();
         if (storedInfo) {
-          storedInfo.forEach(infoItem => {
+          storedInfo.forEach((infoItem) => {
             speciesMap.set(infoItem.data.taxonId, infoItem.data);
           });
         }
-        setState({ status: 'success', data: speciesMap });
+        setState({ status: "success", data: speciesMap });
       } catch (error) {
         console.error("Failed to load species info from IndexedDB:", error);
         setState({
-          status: 'error',
-          error: error instanceof Error ? error : new Error('Unknown error loading species info')
+          status: "error",
+          error:
+            error instanceof Error
+              ? error
+              : new Error("Unknown error loading species info"),
         });
       }
     };
     loadSpeciesInfo();
   }, [refreshCounter]);
 
-  const updateSpeciesInfo = useCallback(async (speciesId: string, newInfo: SpecieInfo) => {
-    try {
-      await speciesInfoStore.set(speciesId, newInfo);
-      setRefreshCounter((prev) => prev + 1);
-    } catch (error) {
-      console.error("Failed to update species info:", error);
-      throw error;
-    }
-  }, []);
+  const updateSpeciesInfo = useCallback(
+    async (speciesId: string, newInfo: SpecieInfo) => {
+      try {
+        await speciesInfoStore.set(speciesId, newInfo);
+        setRefreshCounter((prev) => prev + 1);
+      } catch (error) {
+        console.error("Failed to update species info:", error);
+        throw error;
+      }
+    },
+    []
+  );
 
-  const getSpeciesInfo = useCallback((speciesId: string): SpecieInfo | undefined => {
-    if (state.status === 'success') {
-      return state.data.get(speciesId);
-    }
-    return undefined;
-  }, [state]);
+  const getSpeciesInfo = useCallback(
+    (speciesId: string): SpecieInfo | undefined => {
+      if (state.status === "success") {
+        return state.data.get(speciesId);
+      }
+      return undefined;
+    },
+    [state]
+  );
 
   const value = {
     state,

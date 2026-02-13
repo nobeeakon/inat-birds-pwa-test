@@ -31,17 +31,21 @@ const SpeciesPage = ({
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
 
-  const categories = categoriesContext.state.status === 'success'
-    ? Array.from(categoriesContext.state.data.values())
-    : [];
+  const categories =
+    categoriesContext.state.status === "success"
+      ? Array.from(categoriesContext.state.data.values())
+      : [];
 
   const getCategoriesNames = (categoryIds: string[]) => {
     return categoryIds
-      .map(categoryId => categoriesContext.getCategory(categoryId))
+      .map((categoryId) => categoriesContext.getCategory(categoryId))
       .filter(notNullish);
   };
 
-  const onSpecieCategoryChange = async (taxonId: number, newCategoryId: string) => {
+  const onSpecieCategoryChange = async (
+    taxonId: number,
+    newCategoryId: string
+  ) => {
     const stringTaxonId = taxonId.toString();
     const existingInfo = speciesInfoContext.getSpeciesInfo(stringTaxonId);
 
@@ -49,7 +53,7 @@ const SpeciesPage = ({
 
     if (categoryIds.includes(newCategoryId)) {
       // Remove category
-      categoryIds = categoryIds.filter(id => id !== newCategoryId);
+      categoryIds = categoryIds.filter((id) => id !== newCategoryId);
     } else {
       // Add category
       categoryIds = [...categoryIds, newCategoryId];
@@ -61,7 +65,6 @@ const SpeciesPage = ({
       categoryIds,
     });
   };
-
 
   const speciesData = useFetchSpecies(url, 10);
 
@@ -78,9 +81,11 @@ const SpeciesPage = ({
             ?.toLowerCase()
             .includes(lowerSearchTerm);
 
-          const speciesInfo = speciesInfoContext.getSpeciesInfo(item.taxon.id.toString());
+          const speciesInfo = speciesInfoContext.getSpeciesInfo(
+            item.taxon.id.toString()
+          );
           const categories = getCategoriesNames(speciesInfo?.categoryIds || []);
-          const includesCategory = categories.some(category =>
+          const includesCategory = categories.some((category) =>
             category.name.toLowerCase().includes(lowerSearchTerm)
           );
 
@@ -114,10 +119,7 @@ const SpeciesPage = ({
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{ mb: 2 }}
           />
-          {showCategories && (
-            <EditCategories
-            />
-          )}
+          {showCategories && <EditCategories />}
           <Box
             sx={{
               display: "flex",
@@ -127,12 +129,16 @@ const SpeciesPage = ({
             }}
           >
             {filteredSpeciesData.map((item) => {
-              const speciesInfo = speciesInfoContext.getSpeciesInfo(item.taxon.id.toString());
+              const speciesInfo = speciesInfoContext.getSpeciesInfo(
+                item.taxon.id.toString()
+              );
               return (
                 <SpecieCard
                   key={`spp-${item.taxon.id}`}
                   data={item}
-                  speciesCategories={getCategoriesNames(speciesInfo?.categoryIds || [])}
+                  speciesCategories={getCategoriesNames(
+                    speciesInfo?.categoryIds || []
+                  )}
                   allCategories={categories}
                   onCategoryChange={(newCategoryId) => {
                     onSpecieCategoryChange(item.taxon.id, newCategoryId || "");

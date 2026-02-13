@@ -71,9 +71,7 @@ const EditLocation = ({
           color={isMapClickEnabled ? "success" : "primary"}
           sx={{ mb: 2 }}
         >
-          {isMapClickEnabled
-            ? t("clickOnMapEnabled")
-            : t("enableClickOnMap")}
+          {isMapClickEnabled ? t("clickOnMapEnabled") : t("enableClickOnMap")}
         </Button>
         <Map
           center={[location.lat, location.lng]}

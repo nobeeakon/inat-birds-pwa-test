@@ -23,9 +23,9 @@ const getRepetitionWeight = (reviewInfo: ReviewInfo | undefined): number => {
   if (!reviewInfo) return 0; // Not yet reviewed
 
   const statusWeights = {
-    unidentified: 4,      // Highest priority for repetition
-    sortOfIdentified: 2,  // Medium priority
-    identified: 1,        // Lowest priority
+    unidentified: 4, // Highest priority for repetition
+    sortOfIdentified: 2, // Medium priority
+    identified: 1, // Lowest priority
   };
 
   return statusWeights[reviewInfo.status] * reviewInfo.reviewCount;
@@ -70,10 +70,12 @@ const selectNextIndex = (
   // 30% chance after 10 reviews: select a reviewed item based on weights
   const reviewedItems = Array.from(reviewMap.entries())
     .map(([uuid, info]) => {
-      const index = filteredData.findIndex(item => item.uuid.toString() === uuid);
+      const index = filteredData.findIndex(
+        (item) => item.uuid.toString() === uuid
+      );
       return { uuid, info, index, weight: getRepetitionWeight(info) };
     })
-    .filter(item => item.index !== -1 && item.index !== currentIndex); // Exclude current and removed items
+    .filter((item) => item.index !== -1 && item.index !== currentIndex); // Exclude current and removed items
 
   if (reviewedItems.length === 0) {
     // Fallback to sequential
@@ -117,19 +119,24 @@ const LatestObservationsPage = ({
   const query = useFetchObservations({ lat, lng, radius });
   const [indices, setIndices] = useState([0]);
   const [showEditExcludedTaxa, setShowEditExcludedTaxa] = useState(false);
-  const [reviewMap, setReviewMap] = useState<Map<string, ReviewInfo>>(new Map());
+  const [reviewMap, setReviewMap] = useState<Map<string, ReviewInfo>>(
+    new Map()
+  );
   const { state, updateSpeciesInfo, getSpeciesInfo } = useSpeciesInfoContext();
 
-  const speciesInfo = state.status === 'success' ? state.data : null;
-  const speciesToExclude = speciesInfo ? Array.from(speciesInfo.values()).filter(info => info.exclude) : [];
+  const speciesInfo = state.status === "success" ? state.data : null;
+  const speciesToExclude = speciesInfo
+    ? Array.from(speciesInfo.values()).filter((info) => info.exclude)
+    : [];
 
-  const filteredData = query.data?.filter(
-    (item) => !getSpeciesInfo(item.taxon.id.toString())?.exclude
-  ) ?? [];
+  const filteredData =
+    query.data?.filter(
+      (item) => !getSpeciesInfo(item.taxon.id.toString())?.exclude
+    ) ?? [];
 
   const currendIdx = indices[indices.length - 1];
 
-  useImagePreloader(filteredData.slice(currendIdx, currendIdx + 3));   // Preload images for next observations to improve navigation performance
+  useImagePreloader(filteredData.slice(currendIdx, currendIdx + 3)); // Preload images for next observations to improve navigation performance
 
   const onNext = () => {
     setIndices((prevIndices) => {
@@ -150,15 +157,12 @@ const LatestObservationsPage = ({
     const existingInfo = getSpeciesInfo(dataItem.taxon.id.toString());
     if (!dataItem) return;
 
-    updateSpeciesInfo(
-      dataItem.taxon.id.toString(),
-      {
-        ...(existingInfo ?? {}),
-        taxonId: dataItem.taxon.id.toString(),
-        speciesName: dataItem.taxon.name,
-        exclude: true,
-      }
-    );
+    updateSpeciesInfo(dataItem.taxon.id.toString(), {
+      ...(existingInfo ?? {}),
+      taxonId: dataItem.taxon.id.toString(),
+      speciesName: dataItem.taxon.name,
+      exclude: true,
+    });
 
     // Move to next item
     onNext();
@@ -182,7 +186,11 @@ const LatestObservationsPage = ({
       // Now update indices using the updated review map
       setIndices((prevIndices) => {
         const currentIndex = prevIndices[prevIndices.length - 1];
-        const nextIndex = selectNextIndex(currentIndex, filteredData, updatedMap);
+        const nextIndex = selectNextIndex(
+          currentIndex,
+          filteredData,
+          updatedMap
+        );
         return [...prevIndices, nextIndex];
       });
 
@@ -232,10 +240,8 @@ const LatestObservationsPage = ({
 
       <Box>
         {query.loading && <LoadingWithBirdFacts />}
-        {query.error && <Typography>{t("errorOccurred")}</Typography>}
-        {!dataItem ? (
-          <Typography>{t("noData")}</Typography>
-        ) : (
+        {!!query.error && <Typography>{t("errorOccurred")}</Typography>}
+        {!!dataItem && (
           <ObservationCard
             key={`card-observation-${currendIdx}`}
             data={dataItem}

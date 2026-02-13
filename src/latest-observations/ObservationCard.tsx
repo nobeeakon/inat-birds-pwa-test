@@ -72,7 +72,7 @@ const ObservationCard = ({
         </Button>
       </CardActions>
 
-      <Box sx={{ textAlign: "center", m: 1, }}>
+      <Box sx={{ textAlign: "center", m: 1 }}>
         <Button onClick={() => setShowTaxa(true)} color="info" fullWidth>
           Show
         </Button>
@@ -99,7 +99,14 @@ const ObservationCard = ({
       )}
 
       {data.photos.length > 1 && (
-        <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, p: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 2,
+            p: 2,
+          }}
+        >
           <Button
             onClick={onPrevPhoto}
             sx={{ visibility: photoIdx > 0 ? "visible" : "hidden" }}

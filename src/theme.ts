@@ -1,18 +1,18 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#646cff',
-      contrastText: '#fff',
+      main: "#646cff",
+      contrastText: "#fff",
     },
     success: {
-      main: '#4caf50',
-      light: 'lightgreen',
+      main: "#4caf50",
+      light: "lightgreen",
     },
     info: {
-      main: '#2196f3',
-      light: 'lightblue',
+      main: "#2196f3",
+      light: "lightblue",
     },
   },
   shape: {
@@ -22,9 +22,9 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none',
-          padding: '0.6em 1.2em',
-          fontSize: '0.8em',
+          textTransform: "none",
+          padding: "0.6em 1.2em",
+          fontSize: "0.8em",
         },
       },
     },

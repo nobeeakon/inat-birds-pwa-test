@@ -113,20 +113,38 @@ export const useFetchObservations = ({
 
       try {
         // Stage 1: Get total results to calculate max pages
-        const initialUrl = getUrl({ type: 'species', lat, lng, radius, perPage: 1, page: 0 });
-        const initialData = await fetchData<{ total_results: number; results: SpeciesData[] }>(
-          initialUrl
-        );
+        const initialUrl = getUrl({
+          type: "species",
+          lat,
+          lng,
+          radius,
+          perPage: 1,
+          page: 0,
+        });
+        const initialData = await fetchData<{
+          total_results: number;
+          results: SpeciesData[];
+        }>(initialUrl);
 
         const maxPages = Math.ceil(initialData.total_results / PAGE_SIZE);
 
         const numberOfPagesToFetch = Math.ceil(SPECIES_NUMBER / PAGE_SIZE);
-        const speciesPages = selectRandomNumbers(numberOfPagesToFetch, maxPages);
+        const speciesPages = selectRandomNumbers(
+          numberOfPagesToFetch,
+          maxPages
+        );
 
         const speciesData: { results: SpeciesData[] }[] = [];
         for (const page of speciesPages) {
           await sleep(MIN_SLEEP_MS);
-          const speciesUrl = getUrl({ type: 'species', lat, lng, radius, perPage: PAGE_SIZE, page });
+          const speciesUrl = getUrl({
+            type: "species",
+            lat,
+            lng,
+            radius,
+            perPage: PAGE_SIZE,
+            page,
+          });
           const data = await fetchData<{ results: SpeciesData[] }>(speciesUrl);
           speciesData.push(data);
         }
@@ -135,7 +153,12 @@ export const useFetchObservations = ({
           .flatMap((d) => d.results)
           .filter(notNullish);
 
-        const filteredSpecies =  selectRandomNumbers(SPECIES_NUMBER, allSpecies.length).map((idx) => allSpecies[idx]).filter(notNullish);
+        const filteredSpecies = selectRandomNumbers(
+          SPECIES_NUMBER,
+          allSpecies.length
+        )
+          .map((idx) => allSpecies[idx])
+          .filter(notNullish);
 
         // Stage 2: Fetch observations per species
         const allObservations: ObservationType[] = [];

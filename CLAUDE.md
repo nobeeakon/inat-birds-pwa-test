@@ -13,9 +13,11 @@ Birds iNaturalist PWA - A Progressive Web App for tracking bird observations fro
 ## Workflow Requirements
 
 **After Code Changes**: Always complete these steps after any code modifications:
+
 1. Run `pnpm run format` to format the code
-2. Run `pnpm lint` to check for linting issues
-3. Run `pnpm build` to verify the build succeeds
+2. Run `pnpm run i18n` to extract translation keys
+3. Run `pnpm lint` to check for linting issues
+4. Run `pnpm build` to verify the build succeeds
 
 ## Development Commands
 
@@ -32,6 +34,7 @@ pnpm preview-host       # Preview with network access
 # Code quality
 pnpm lint               # Run ESLint
 pnpm format             # Format code with Prettier
+pnpm i18n               # Extract translation keys
 ```
 
 **Package manager**: This project uses pnpm (v10.17.0+).
@@ -41,6 +44,7 @@ pnpm format             # Format code with Prettier
 ### Application Structure
 
 Three-page SPA with manual page state management (no router):
+
 - **Observations Page** (`src/latest-observations/`) - Recent bird observations from iNaturalist
 - **Species Page** (`src/species/`) - Species count aggregates for selected location
 - **Locations Page** (`src/locations-page/`) - Manage saved location presets
@@ -48,25 +52,30 @@ Three-page SPA with manual page state management (no router):
 ### State Management
 
 **Global State:**
+
 - `LocationsContext` - Locations list persisted to localStorage via `useStorageState` hook
 - `SpeciesInfoContext` - Species information (notes, categories, exclusions) persisted to IndexedDB
 - Current location ID persisted separately in localStorage
 
 **Local State:**
+
 - Pages manage their own data fetching and UI state
 
 ### Data Layer
 
 **localStorage** (`src/storage.ts`):
+
 - Location presets (`LocationInformation[]`)
 - Current location selection
 - Managed via `useStorageState` hook with automatic persistence
 
 **IndexedDB** (`src/storage/db.ts`):
+
 - Species information (personal notes, category tags, exclusions, preferred images, similar species)
 - Accessed via `SpeciesInfoContext` ([src/SpeciesInfoContext.tsx](src/SpeciesInfoContext.tsx)) using the `useSpeciesInfoContext` hook
 
 **API Integration** (`src/fetchData.ts`, `src/utils.ts`):
+
 - iNaturalist API v2 endpoints for observations and species counts
 - PWA service worker caches API responses and images (configured in [vite.config.ts](vite.config.ts))
 
@@ -75,6 +84,7 @@ Three-page SPA with manual page state management (no router):
 **Path Alias**: `@` resolves to `src/` (configured in [vite.config.ts](vite.config.ts))
 
 **TypeScript**:
+
 - Use `type` instead of `interface` for type definitions
 - Non-null assertion operator (`!`) is disallowed by ESLint rule
 
@@ -82,7 +92,12 @@ Three-page SPA with manual page state management (no router):
 
 **i18n**: English/Spanish translations via i18next ([src/i18n.ts](src/i18n.ts), [src/locales/](src/locales/))
 
+- i18next-parser extracts translation keys and generates `_one` and `_other` suffixes for keys with `{{count}}`
+- When using `t("key", { count })`, ensure locale files have proper singular/plural forms (`key_one`, `key_other`)
+- After running `pnpm run i18n`, manually verify extracted keys have correct translations (parser sets them to key names)
+
 **PWA**: Offline support with Workbox caching strategies:
+
 - `NetworkFirst` for API species counts (2-day cache)
 - `CacheFirst` for iNaturalist images (2-day cache)
 
@@ -95,6 +110,7 @@ Three-page SPA with manual page state management (no router):
 ### Component Organization
 
 Components are co-located with their pages:
+
 - Page-level components in feature directories (`latest-observations/`, `species/`, `locations-page/`)
 - Shared components in `src/components/`
 - Custom hooks prefixed with `use` (e.g., `useFetchObservations`, `useSpeciesInfoContext`)
@@ -102,6 +118,7 @@ Components are co-located with their pages:
 ### Type Definitions
 
 Core types in [src/types.ts](src/types.ts):
+
 - `LocationInformation` - Location preset structure
 - Page-specific types in respective directories (e.g., [src/latest-observations/types.ts](src/latest-observations/types.ts))
 - Database types in [src/storage/db.ts](src/storage/db.ts)

@@ -80,7 +80,9 @@ const Header = ({
             </Select>
           </FormControl>
           <Button onClick={onShowLocations}>{t("editLocations")}</Button>
-          <Button onClick={toggleEditExcludedTaxa}>{t("excludeSpecies")}</Button>
+          <Button onClick={toggleEditExcludedTaxa}>
+            {t("excludeSpecies")}
+          </Button>
         </Box>
       )}
     </Box>

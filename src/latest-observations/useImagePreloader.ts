@@ -15,7 +15,7 @@ export const useImagePreloader = (
 
     // Preload all photos from all observations, deduplicating by URL
     observationsToPreload.forEach((observation) => {
-      observation.photos?.slice(0,3).forEach((photo) => {
+      observation.photos?.slice(0, 3).forEach((photo) => {
         const imgUrl = photo.url.replace("square", "medium");
 
         if (!seenUrls.has(imgUrl)) {
