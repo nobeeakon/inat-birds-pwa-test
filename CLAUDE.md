@@ -45,7 +45,7 @@ pnpm i18n               # Extract translation keys
 
 Three-page SPA with manual page state management (no router):
 
-- **Observations Page** (`src/latest-observations/`) - Recent bird observations from iNaturalist
+- **Observations Page** (`src/observations/`) - Recent bird observations from iNaturalist
 - **Species Page** (`src/species/`) - Species count aggregates for selected location
 - **Locations Page** (`src/locations-page/`) - Manage saved location presets
 
@@ -120,5 +120,5 @@ Components are co-located with their pages:
 Core types in [src/types.ts](src/types.ts):
 
 - `LocationInformation` - Location preset structure
-- Page-specific types in respective directories (e.g., [src/latest-observations/types.ts](src/latest-observations/types.ts))
+- Page-specific types in respective directories (e.g., [src/observations/types.ts](src/observations/types.ts))
 - Database types in [src/storage/db.ts](src/storage/db.ts)

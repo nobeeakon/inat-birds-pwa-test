@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/species/Header";
 import { useFetchSpecies } from "@/species/useFetchSpecies";
@@ -8,19 +8,24 @@ import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import EditCategories from "@/species/EditCategories";
 import { notNullish } from "@/utils";
+import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
 // TODO use a different photo, selected from the observations
 // TODO add notes in the specie card
 
 const SpeciesPage = ({
-  onShowLatestObservations,
+  onShowObservations,
   onShowLocations,
-  url,
+  lat,
+  lng,
+  radius,
   currentLocationId,
   updateLocation,
 }: {
-  onShowLatestObservations: () => void;
+  onShowObservations: () => void;
   onShowLocations: () => void;
-  url: string;
+  lat: number;
+  lng: number;
+  radius: number;
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
 }) => {
@@ -66,7 +71,7 @@ const SpeciesPage = ({
     });
   };
 
-  const speciesData = useFetchSpecies(url, 10);
+  const speciesData = useFetchSpecies({ lat, lng, radius, numberOfPages: 10 });
 
   const filteredSpeciesData =
     !searchTerm || !speciesData.data
@@ -97,12 +102,12 @@ const SpeciesPage = ({
       <Header
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
-        onShowLatestObservations={onShowLatestObservations}
+        onShowObservations={onShowObservations}
         onShowLocations={onShowLocations}
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
-      {speciesData.loading && <div>{t("loading")}</div>}
+      {speciesData.loading && <LoadingWithBirdFacts />}
       {speciesData.error && <div>{t("error")}</div>}
       {filteredSpeciesData && (
         <div>
@@ -153,4 +158,49 @@ const SpeciesPage = ({
   );
 };
 
-export default SpeciesPage;
+// Wrapper to delay SpeciesPage load by 5 seconds to prevent iNaturalist API rate limiting
+const SpeciesPageWrapper = ({
+  onShowObservations,
+  onShowLocations,
+  lat,
+  lng,
+  radius,
+  currentLocationId,
+  updateLocation,
+}: {
+  onShowObservations: () => void;
+  onShowLocations: () => void;
+  lat: number;
+  lng: number;
+  radius: number;
+  currentLocationId: string;
+  updateLocation: (newLocationId: string) => void;
+}) => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <LoadingWithBirdFacts />;
+  }
+
+  return (
+    <SpeciesPage
+      onShowObservations={onShowObservations}
+      onShowLocations={onShowLocations}
+      lat={lat}
+      lng={lng}
+      radius={radius}
+      currentLocationId={currentLocationId}
+      updateLocation={updateLocation}
+    />
+  );
+};
+
+export default SpeciesPageWrapper;

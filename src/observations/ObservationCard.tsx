@@ -10,8 +10,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import { type ObservationType } from "@/latest-observations/useFetchObservations";
-import type { ObservationStatus } from "@/latest-observations/types";
+import { type ObservationType } from "@/observations/useFetchObservations";
+import type { ObservationStatus } from "@/observations/types";
 
 const ObservationCard = ({
   data,

@@ -30,7 +30,6 @@
   "geolocationNotSupported": "Geolocation is not supported by your browser",
   "installApp": "Install App",
   "latitude": "Latitude",
-  "loading": "Loading...",
   "locationNumber": "Location {{number}}",
   "longitude": "Longitude",
   "name": "Name",

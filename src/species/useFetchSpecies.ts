@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
-import { sleep } from "@/utils";
+import { sleep, getUrl } from "@/utils";
 
 type Photo = {
   id: number;
@@ -49,22 +49,30 @@ type ResponseType = {
   results: SpeciesData[];
 };
 
-const parseURLWithPage = (url: string, page: number) => {
-  // example URL:
-  // https://api.inaturalist.org/v2/observations/species_counts?verifiable=true&spam=false&lat=20.5756156646437&lng=-100.36499030435793&radius=11.590587837954427&iconic_taxa%5B%5D=Aves&locale=es-MX&preferred_place_id=6793&page=2&per_page=50&include_ancestors=true&fields=(taxon%3A(ancestor_ids%3A!t%2Cancestors%3A(default_photo%3A(square_url%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t%2Cuuid%3A!t)%2Cancestry%3A!t%2Cconservation_status%3A(status%3A!t)%2Cdefault_photo%3A(attribution%3A!t%2Clicense_code%3A!t%2Cmedium_url%3A!t%2Csquare_url%3A!t%2Curl%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t))"
-
-  const newUrl = new URL(url);
-  newUrl.searchParams.set("page", page.toString());
-  return newUrl.toString();
-};
-
-const fetchSpecies = async (url: string, numberOfPages: number) => {
+const fetchSpecies = async ({
+  lat,
+  lng,
+  radius,
+  numberOfPages,
+}: {
+  lat: number;
+  lng: number;
+  radius: number;
+  numberOfPages: number;
+}) => {
   const result = [];
 
   for (let page = 1; page <= numberOfPages; page++) {
-    await sleep(3500); // ok to do this since is going to happen in the background
-    const pageUrl = parseURLWithPage(url, page);
-    const data = await fetchData<ResponseType>(parseURLWithPage(pageUrl, page));
+    await sleep(1000);
+    const pageUrl = getUrl({
+      type: "species",
+      lat,
+      lng,
+      radius,
+      page,
+      perPage: 50,
+    });
+    const data = await fetchData<ResponseType>(pageUrl);
 
     if (data.results.length === 0) {
       break;
@@ -77,7 +85,17 @@ const fetchSpecies = async (url: string, numberOfPages: number) => {
 };
 
 // TODO do as infinite pager
-export const useFetchSpecies = (url: string, numberOfPages: number = 10) => {
+export const useFetchSpecies = ({
+  lat,
+  lng,
+  radius,
+  numberOfPages = 10,
+}: {
+  lat: number;
+  lng: number;
+  radius: number;
+  numberOfPages?: number;
+}) => {
   const [queries, setQueries] = useState<{
     loading: boolean;
     data: null | SpeciesData[];
@@ -86,13 +104,14 @@ export const useFetchSpecies = (url: string, numberOfPages: number = 10) => {
 
   useEffect(() => {
     const fetchPagesData = async () => {
-      if (!url) {
+      if (!lat || !lng || !radius) {
         setQueries({ loading: false, data: null, error: null });
+        return;
       }
 
       setQueries({ loading: true, data: null, error: null });
       try {
-        const data = await fetchSpecies(url, numberOfPages);
+        const data = await fetchSpecies({ lat, lng, radius, numberOfPages });
 
         setQueries({ loading: false, data, error: null });
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,7 +121,7 @@ export const useFetchSpecies = (url: string, numberOfPages: number = 10) => {
     };
 
     fetchPagesData();
-  }, [numberOfPages, url]);
+  }, [lat, lng, radius, numberOfPages]);
 
   return queries;
 };

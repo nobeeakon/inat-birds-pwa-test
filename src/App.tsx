@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box } from "@mui/material";
 
-import LatestObservationsPage from "@/latest-observations/LatestObservationsPage";
+import ObservationsPage from "@/observations/ObservationsPage";
+import SpeciesPage from "@/species/SpeciesPage";
 import LocationsPage from "./locations-page/EditLocationsPage";
 import { useStorageState } from "@/storage/storage";
 import { LOCAL_STORAGE_KEY } from "@/constants";
@@ -51,7 +52,7 @@ const App = () => {
       ) : (
         <>
           <div className={page === "observations" ? "" : "hidden"}>
-            <LatestObservationsPage
+            <ObservationsPage
               currentLocationId={currentLocationId}
               onShowSpecies={() => setPage("species")}
               onShowLocations={() => setPage("locations")}
@@ -64,20 +65,17 @@ const App = () => {
             />
           </div>
           <div className={page === "species" ? "" : "hidden"}>
-            {/* <SpeciesPage
-              onShowLatestObservations={() => setPage("observations")}
+            <SpeciesPage
+              onShowObservations={() => setPage("observations")}
               onShowLocations={() => setPage("locations")}
               currentLocationId={currentLocationId}
-              url={getUrl({
-                type: "species",
-                lat: currentLocation.lat,
-                lng: currentLocation.lng,
-                radius: currentLocation.radius,
-              })}
+              lat={currentLocation.lat}
+              lng={currentLocation.lng}
+              radius={currentLocation.radius}
               updateLocation={(newLocation) =>
                 setCurrentLocationId(newLocation)
               }
-            /> */}
+            />
           </div>
         </>
       )}

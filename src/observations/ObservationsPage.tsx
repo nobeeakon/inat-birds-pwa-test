@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 
-import { useFetchObservations } from "@/latest-observations/useFetchObservations";
-import ObservationCard from "@/latest-observations/ObservationCard";
-import Header from "@/latest-observations/Header";
-import LoadingWithBirdFacts from "@/latest-observations/LoadingWithBirdFacts";
-import type { ObservationStatus } from "@/latest-observations/types";
+import { useFetchObservations } from "@/observations/useFetchObservations";
+import ObservationCard from "@/observations/ObservationCard";
+import Header from "@/observations/Header";
+import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
+import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
-import type { ObservationType } from "@/latest-observations/useFetchObservations";
-import { useImagePreloader } from "@/latest-observations/useImagePreloader";
+import type { ObservationType } from "@/observations/useFetchObservations";
+import { useImagePreloader } from "@/observations/useImagePreloader";
 // TODO add an error boundary
 
 type ReviewInfo = {
@@ -98,7 +98,7 @@ const selectNextIndex = (
   return reviewedItems[0].index;
 };
 
-const LatestObservationsPage = ({
+const ObservationsPage = ({
   currentLocationId,
   onShowSpecies,
   onShowLocations,
@@ -256,4 +256,4 @@ const LatestObservationsPage = ({
   );
 };
 
-export default LatestObservationsPage;
+export default ObservationsPage;

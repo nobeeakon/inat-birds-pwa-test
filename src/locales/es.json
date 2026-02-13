@@ -31,7 +31,6 @@
   "geolocationNotSupported": "La geolocalización no es compatible con tu navegador",
   "installApp": "Instalar App",
   "latitude": "Latitud",
-  "loading": "Cargando...",
   "locationNumber": "Ubicación {{number}}",
   "longitude": "Longitud",
   "name": "Nombre",

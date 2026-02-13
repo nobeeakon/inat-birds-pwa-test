@@ -15,13 +15,13 @@ import { useLocationsContext } from "@/LocationsContext";
 const Header = ({
   currentLocationId,
   updateLocation,
-  onShowLatestObservations,
+  onShowObservations,
   onShowLocations,
   onEditCategories,
 }: {
   currentLocationId: string;
   updateLocation: (locationId: string) => void;
-  onShowLatestObservations: () => void;
+  onShowObservations: () => void;
   onShowLocations: () => void;
   onEditCategories: () => void;
 }) => {
@@ -32,7 +32,7 @@ const Header = ({
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={onShowLatestObservations}>
+        <Button variant="contained" onClick={onShowObservations}>
           {t("observations")}
         </Button>
         <Button variant="outlined" onClick={() => setShowConfig(!showConfig)}>
