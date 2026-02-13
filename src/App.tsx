@@ -10,6 +10,7 @@ import LocationsContextProvider, {
   useLocationsContext,
 } from "@/LocationsContext";
 import SpeciesInfoContextProvider from "@/SpeciesInfoContext";
+import InstallButton from "@/components/InstallButton";
 
 import "./App.css";
 
@@ -90,6 +91,7 @@ const AppWrapper = () => {
       <LocationsContextProvider>
         <SpeciesInfoContextProvider>
           <App />
+          <InstallButton />
         </SpeciesInfoContextProvider>
       </LocationsContextProvider>
     </div>
