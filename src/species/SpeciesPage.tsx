@@ -94,7 +94,7 @@ const SpeciesPage = ({
         });
 
   return (
-    <div>
+    <>
       <Header
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
@@ -104,7 +104,7 @@ const SpeciesPage = ({
       {speciesData.loading && <LoadingWithBirdFacts />}
       {speciesData.error && <div>{t("error")}</div>}
       {filteredSpeciesData && (
-        <div>
+        <Box sx={{ p: 4 }}>
           <h2>
             {t("speciesData")} ({filteredSpeciesData.length} /{" "}
             {speciesData.data?.length || 0})
@@ -146,9 +146,9 @@ const SpeciesPage = ({
               );
             })}
           </Box>
-        </div>
+        </Box>
       )}
-    </div>
+    </>
   );
 };
 

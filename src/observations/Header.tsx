@@ -51,10 +51,12 @@ const Header = ({
             <MenuIcon />
           </IconButton>
           <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
-            <Button variant="contained" component={Link} to="/species">
+            <Button      variant="outlined"
+              color="inherit" component={Link} to="/species">
               {t("species")}
             </Button>
-            <Button variant="outlined" onClick={onExcludeTaxa}>
+            <Button      variant="outlined"
+              color="inherit" onClick={onExcludeTaxa}>
               {t("exclude")}
             </Button>
             <Button

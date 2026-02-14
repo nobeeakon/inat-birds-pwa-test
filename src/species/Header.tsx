@@ -44,11 +44,17 @@ const Header = ({
             <MenuIcon />
           </IconButton>
           <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
-            <Button variant="contained" component={Link} to="/observations">
+            <Button
+              variant="outlined"
+              color="inherit"
+              component={Link}
+              to="/observations"
+            >
               {t("observations")}
             </Button>
             <Button
               variant="outlined"
+              color="inherit"
               onClick={() => setShowConfig(!showConfig)}
             >
               {t("config")}
