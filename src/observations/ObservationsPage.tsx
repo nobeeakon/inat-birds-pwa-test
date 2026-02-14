@@ -15,7 +15,6 @@ import { useImagePreloader } from "@/observations/useImagePreloader";
 type ReviewInfo = {
   status: ObservationStatus;
   reviewCount: number;
-  lastReviewedAt: number;
 };
 
 // Calculate weight for spaced repetition based on status
@@ -100,14 +99,12 @@ const selectNextIndex = (
 
 const ObservationsPage = ({
   currentLocationId,
-  onShowSpecies,
   lat,
   lng,
   radius,
   updateLocation,
 }: {
   currentLocationId: string;
-  onShowSpecies: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -144,12 +141,6 @@ const ObservationsPage = ({
     });
   };
 
-  const onPrevious = () => {
-    if (indices.length <= 1) return;
-
-    setIndices((prev) => prev.slice(0, prev.length - 1));
-  };
-
   const onExcludeTaxa = () => {
     const dataItem = filteredData[indices[indices.length - 1]];
     const existingInfo = getSpeciesInfo(dataItem.taxon.id.toString());
@@ -178,7 +169,6 @@ const ObservationsPage = ({
       updatedMap.set(observationUuid, {
         status,
         reviewCount: (existingReview?.reviewCount ?? 0) + 1,
-        lastReviewedAt: Date.now(),
       });
 
       // Now update indices using the updated review map
@@ -212,7 +202,6 @@ const ObservationsPage = ({
         toggleEditExcludedTaxa={() =>
           setShowEditExcludedTaxa(!showEditExcludedTaxa)
         }
-        onShowSpecies={onShowSpecies}
       />
 
       {showEditExcludedTaxa && (
@@ -245,7 +234,6 @@ const ObservationsPage = ({
             onNext={(status: ObservationStatus) =>
               onObservationIdentified(dataItem.uuid.toString(), status)
             }
-            onPrevious={onPrevious}
           />
         )}
       </Box>

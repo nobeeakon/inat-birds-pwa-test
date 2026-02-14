@@ -9,6 +9,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 import { type ObservationType } from "@/observations/useFetchObservations";
 import type { ObservationStatus } from "@/observations/types";
@@ -16,14 +17,13 @@ import type { ObservationStatus } from "@/observations/types";
 const ObservationCard = ({
   data,
   onNext,
-  onPrevious,
 }: {
   data: ObservationType;
   onNext: (observationStatus: ObservationStatus) => void;
-  onPrevious: () => void;
 }) => {
   const [showTaxa, setShowTaxa] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const { t } = useTranslation();
 
   const imgUrl =
     data.photos && data.photos.length > 0
@@ -67,9 +67,6 @@ const ObservationCard = ({
         >
           Difícil
         </Button>
-        <Button fullWidth variant="outlined" onClick={onPrevious}>
-          Prev
-        </Button>
       </CardActions>
 
       <Box sx={{ textAlign: "center", m: 1 }}>
@@ -111,10 +108,10 @@ const ObservationCard = ({
             onClick={onPrevPhoto}
             sx={{ visibility: photoIdx > 0 ? "visible" : "hidden" }}
           >
-            Anterior
+            {t("Previous")}
           </Button>
           {photoIdx < data.photos.length - 1 && (
-            <Button onClick={onNextPhoto}>Siguiente</Button>
+            <Button onClick={onNextPhoto}>{t("Next")}</Button>
           )}
         </Box>
       )}

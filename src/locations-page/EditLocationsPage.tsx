@@ -14,7 +14,11 @@ import {
   TableHead,
   TableRow,
   Paper,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import { useLocationsContext } from "@/LocationsContext";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
@@ -156,11 +160,7 @@ const DEFAULT_NEW_LOCATION: LocationInformation = {
   radius: 5,
 };
 
-const LocationsPage = ({
-  onShowObservationsPage,
-}: {
-  onShowObservationsPage: () => void;
-}) => {
+const LocationsPage = () => {
   const { t } = useTranslation();
   const { locationsInfo, setLocationsInfo } = useLocationsContext();
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
@@ -187,76 +187,90 @@ const LocationsPage = ({
 
   return (
     <Box>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-        {locationsInfo.length > 0 && (
-          <Button onClick={onShowObservationsPage} variant="contained">
-            {t("done")}
-          </Button>
-        )}
-        <Button onClick={onAddNewLocation} variant="outlined">
-          {t("addLocation")}
-        </Button>
-      </Stack>
-
-      {selectedLocation ? (
-        <EditLocation
-          location={selectedLocation}
-          onDeleteLocation={() => onDeleteLocation(selectedLocation.id)}
-          updateLocation={(updatedLocation) => {
-            const newLocations = locationsInfo.map((loc) =>
-              loc.id === updatedLocation.id ? updatedLocation : loc
-            );
-            setLocationsInfo(newLocations);
-          }}
-          onDone={() => setSelectedLocationId(null)}
-        />
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>{t("name")}</TableCell>
-                <TableCell>{t("radiusKm")}</TableCell>
-                <TableCell>{t("actions")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {locationsInfo.map((locationItem, index) => (
-                <TableRow key={locationItem.id}>
-                  <TableCell>
-                    <Link to={`/observations?location=${locationItem.id}`}>
-                      {locationItem.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{locationItem.radius}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        size="small"
-                        onClick={() => setSelectedLocationId(locationItem.id)}
-                      >
-                        {t("edit")}
-                      </Button>
-                      <Button
-                        size="small"
-                        color="error"
-                        onClick={() => {
-                          const newLocations = locationsInfo.filter(
-                            (_, i) => i !== index
-                          );
-                          setLocationsInfo(newLocations);
-                        }}
-                      >
-                        {t("delete")}
-                      </Button>
-                    </Stack>
-                  </TableCell>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
+            {locationsInfo.length > 0 && (
+              <Button component={Link} to="/observations" color="inherit">
+                {t("done")}
+              </Button>
+            )}
+            <Button onClick={onAddNewLocation} color="inherit">
+              {t("addLocation")}
+            </Button>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+      <Box sx={{ mt: 2, px: 4 }}>
+        {selectedLocation ? (
+          <EditLocation
+            location={selectedLocation}
+            onDeleteLocation={() => onDeleteLocation(selectedLocation.id)}
+            updateLocation={(updatedLocation) => {
+              const newLocations = locationsInfo.map((loc) =>
+                loc.id === updatedLocation.id ? updatedLocation : loc
+              );
+              setLocationsInfo(newLocations);
+            }}
+            onDone={() => setSelectedLocationId(null)}
+          />
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t("name")}</TableCell>
+                  <TableCell>{t("radiusKm")}</TableCell>
+                  <TableCell>{t("actions")}</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+              </TableHead>
+              <TableBody>
+                {locationsInfo.map((locationItem, index) => (
+                  <TableRow key={locationItem.id}>
+                    <TableCell>
+                      <Link to={`/observations?location=${locationItem.id}`}>
+                        {locationItem.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{locationItem.radius}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          size="small"
+                          onClick={() => setSelectedLocationId(locationItem.id)}
+                        >
+                          {t("edit")}
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            const newLocations = locationsInfo.filter(
+                              (_, i) => i !== index
+                            );
+                            setLocationsInfo(newLocations);
+                          }}
+                        >
+                          {t("delete")}
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
     </Box>
   );
 };

@@ -1,11 +1,4 @@
-import { Box } from "@mui/material";
-import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import ObservationsPage from "@/observations/ObservationsPage";
 import SpeciesPage from "@/species/SpeciesPage";
@@ -22,16 +15,14 @@ const ObservationsAndSpecies = ({
   currentLocation: LocationInformation;
   setCurrentLocationId: (id: string) => void;
 }) => {
-  const navigate = useNavigate();
   const location = useLocation();
   const isObservations = location.pathname === "/observations";
 
   return (
-    <Box sx={{ px: 2 }}>
+    <>
       <div className={isObservations ? "" : "hidden"}>
         <ObservationsPage
           currentLocationId={currentLocation.id}
-          onShowSpecies={() => navigate("/species")}
           lat={currentLocation.lat}
           lng={currentLocation.lng}
           radius={currentLocation.radius}
@@ -40,7 +31,6 @@ const ObservationsAndSpecies = ({
       </div>
       <div className={isObservations ? "hidden" : ""}>
         <SpeciesPage
-          onShowObservations={() => navigate("/observations")}
           currentLocationId={currentLocation.id}
           lat={currentLocation.lat}
           lng={currentLocation.lng}
@@ -48,26 +38,18 @@ const ObservationsAndSpecies = ({
           updateLocation={(newLocation) => setCurrentLocationId(newLocation)}
         />
       </div>
-    </Box>
+    </>
   );
 };
 
 const Router = () => {
-  const navigate = useNavigate();
   const { currentLocation, setCurrentLocationId } = useCurrentLocation();
 
   // Redirect to locations if no location is set
   if (!currentLocation) {
     return (
       <Routes>
-        <Route
-          path="/locations"
-          element={
-            <LocationsPage
-              onShowObservationsPage={() => navigate("/observations")}
-            />
-          }
-        />
+        <Route path="/locations" element={<LocationsPage />} />
         <Route path="*" element={<Navigate to="/locations" replace />} />
       </Routes>
     );
@@ -75,14 +57,7 @@ const Router = () => {
 
   return (
     <Routes>
-      <Route
-        path="/locations"
-        element={
-          <LocationsPage
-            onShowObservationsPage={() => navigate("/observations")}
-          />
-        }
-      />
+      <Route path="/locations" element={<LocationsPage />} />
       <Route
         path="/observations"
         element={

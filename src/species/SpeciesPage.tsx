@@ -13,14 +13,12 @@ import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
 // TODO add notes in the specie card
 
 const SpeciesPage = ({
-  onShowObservations,
   lat,
   lng,
   radius,
   currentLocationId,
   updateLocation,
 }: {
-  onShowObservations: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -100,7 +98,6 @@ const SpeciesPage = ({
       <Header
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
-        onShowObservations={onShowObservations}
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
@@ -157,14 +154,12 @@ const SpeciesPage = ({
 
 // Wrapper to delay SpeciesPage load by 5 seconds to prevent iNaturalist API rate limiting
 const SpeciesPageWrapper = ({
-  onShowObservations,
   lat,
   lng,
   radius,
   currentLocationId,
   updateLocation,
 }: {
-  onShowObservations: () => void;
   lat: number;
   lng: number;
   radius: number;
@@ -187,7 +182,6 @@ const SpeciesPageWrapper = ({
 
   return (
     <SpeciesPage
-      onShowObservations={onShowObservations}
       lat={lat}
       lng={lng}
       radius={radius}

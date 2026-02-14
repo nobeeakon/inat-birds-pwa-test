@@ -9,19 +9,21 @@ import {
   MenuItem,
   Box,
   InputLabel,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 import { useLocationsContext } from "@/LocationsContext";
 
 const Header = ({
   currentLocationId,
   updateLocation,
-  onShowObservations,
   onEditCategories,
 }: {
   currentLocationId: string;
   updateLocation: (locationId: string) => void;
-  onShowObservations: () => void;
   onEditCategories: () => void;
 }) => {
   const { t } = useTranslation();
@@ -30,14 +32,30 @@ const Header = ({
 
   return (
     <Box>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={onShowObservations}>
-          {t("observations")}
-        </Button>
-        <Button variant="outlined" onClick={() => setShowConfig(!showConfig)}>
-          {t("config")}
-        </Button>
-      </Stack>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
+            <Button variant="contained" component={Link} to="/observations">
+              {t("observations")}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setShowConfig(!showConfig)}
+            >
+              {t("config")}
+            </Button>
+          </Stack>
+        </Toolbar>
+      </AppBar>
       {showConfig && (
         <Box
           sx={{

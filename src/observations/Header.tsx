@@ -9,7 +9,11 @@ import {
   MenuItem,
   Box,
   InputLabel,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 import { useLocationsContext } from "@/LocationsContext";
 
@@ -23,13 +27,11 @@ const Header = ({
   updateLocation,
   onExcludeTaxa,
   toggleEditExcludedTaxa,
-  onShowSpecies,
 }: {
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
   onExcludeTaxa: () => void;
   toggleEditExcludedTaxa: () => void;
-  onShowSpecies: () => void;
 }) => {
   const { t } = useTranslation();
   const [showConfig, setShowConfig] = useState(false);
@@ -37,17 +39,33 @@ const Header = ({
 
   return (
     <Box>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-        <Button variant="contained" onClick={onShowSpecies}>
-          {t("species")}
-        </Button>
-        <Button variant="outlined" onClick={onExcludeTaxa}>
-          {t("exclude")}
-        </Button>
-        <Button variant="outlined" onClick={() => setShowConfig(!showConfig)}>
-          {t("config")}
-        </Button>
-      </Stack>
+      <AppBar position="static">
+        <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
+            <Button variant="contained" component={Link} to="/species">
+              {t("species")}
+            </Button>
+            <Button variant="outlined" onClick={onExcludeTaxa}>
+              {t("exclude")}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setShowConfig(!showConfig)}
+            >
+              {t("config")}
+            </Button>
+          </Stack>
+        </Toolbar>
+      </AppBar>
       {showConfig && (
         <Box
           sx={{
