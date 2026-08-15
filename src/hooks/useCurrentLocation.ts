@@ -43,10 +43,17 @@ export const useCurrentLocation = (): UseCurrentLocationReturn => {
     return locations[0].id;
   }, [locations, urlLocationId]);
 
-  // Sync URL param when current location changes
+  // Sync URL param when current location changes, preserving other params (e.g. taxon)
   useEffect(() => {
     if (currentLocationId && urlLocationId !== currentLocationId) {
-      setSearchParams({ location: currentLocationId }, { replace: true });
+      setSearchParams(
+        (previousParams) => {
+          const nextParams = new URLSearchParams(previousParams);
+          nextParams.set("location", currentLocationId);
+          return nextParams;
+        },
+        { replace: true }
+      );
     }
   }, [currentLocationId, urlLocationId, setSearchParams]);
 
@@ -61,7 +68,11 @@ export const useCurrentLocation = (): UseCurrentLocationReturn => {
 
   const setCurrentLocationId = (id: string) => {
     storage.set(LOCAL_STORAGE_KEY.currentLocationId, id);
-    setSearchParams({ location: id });
+    setSearchParams((previousParams) => {
+      const nextParams = new URLSearchParams(previousParams);
+      nextParams.set("location", id);
+      return nextParams;
+    });
   };
 
   const currentLocation = locations.find((loc) => loc.id === currentLocationId);

@@ -1,5 +1,7 @@
 export const LOCAL_STORAGE_KEY = {
   currentLocationId: "current_location_id",
+  currentTaxa: "current_taxa",
+  currentSpeciesPool: "current_species_pool",
   locationsInfo: "locations_info",
   STORED_URLS_KEY: "stored-urls",
   LAST_URL_KEY: "last-url",

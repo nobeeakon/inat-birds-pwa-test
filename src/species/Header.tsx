@@ -16,14 +16,20 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 
 import { useLocationsContext } from "@/LocationsContext";
+import TaxaSelector from "@/components/TaxaSelector";
+import type { Taxa } from "@/taxa";
 
 const Header = ({
   currentLocationId,
   updateLocation,
+  currentTaxa,
+  updateTaxa,
   onEditCategories,
 }: {
   currentLocationId: string;
   updateLocation: (locationId: string) => void;
+  currentTaxa: Taxa;
+  updateTaxa: (newTaxa: Taxa) => void;
   onEditCategories: () => void;
 }) => {
   const { t } = useTranslation();
@@ -92,6 +98,7 @@ const Header = ({
               ))}
             </Select>
           </FormControl>
+          <TaxaSelector currentTaxa={currentTaxa} updateTaxa={updateTaxa} />
           <Button component={Link} to="/locations">
             {t("editLocations")}
           </Button>

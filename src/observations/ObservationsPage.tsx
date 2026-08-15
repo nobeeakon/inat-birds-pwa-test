@@ -10,6 +10,8 @@ import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import type { ObservationType } from "@/observations/useFetchObservations";
 import { useImagePreloader } from "@/observations/useImagePreloader";
+import type { Taxa } from "@/taxa";
+import type { SpeciesPool } from "@/speciesPool";
 // TODO add an error boundary
 
 type ReviewInfo = {
@@ -102,16 +104,30 @@ const ObservationsPage = ({
   lat,
   lng,
   radius,
+  currentTaxa,
+  currentSpeciesPool,
   updateLocation,
+  updateTaxa,
+  updateSpeciesPool,
 }: {
   currentLocationId: string;
   lat: number;
   lng: number;
   radius: number;
+  currentTaxa: Taxa;
+  currentSpeciesPool: SpeciesPool;
   updateLocation: (newLocationId: string) => void;
+  updateTaxa: (newTaxa: Taxa) => void;
+  updateSpeciesPool: (newSpeciesPool: SpeciesPool) => void;
 }) => {
   const { t } = useTranslation();
-  const query = useFetchObservations({ lat, lng, radius });
+  const query = useFetchObservations({
+    lat,
+    lng,
+    radius,
+    taxa: currentTaxa,
+    speciesPool: currentSpeciesPool,
+  });
   const [indices, setIndices] = useState([0]);
   const [showEditExcludedTaxa, setShowEditExcludedTaxa] = useState(false);
   const [reviewMap, setReviewMap] = useState<Map<string, ReviewInfo>>(
@@ -191,6 +207,18 @@ const ObservationsPage = ({
     updateLocation(newLocationId);
   };
 
+  // Reset the browsing position since a taxa change refetches a whole new set
+  const handleUpdateTaxa = (newTaxa: Taxa) => {
+    setIndices([0]);
+    updateTaxa(newTaxa);
+  };
+
+  // Same as above: a different species pool means a different set of observations
+  const handleUpdateSpeciesPool = (newSpeciesPool: SpeciesPool) => {
+    setIndices([0]);
+    updateSpeciesPool(newSpeciesPool);
+  };
+
   const dataItem = filteredData[currendIdx];
 
   return (
@@ -199,6 +227,10 @@ const ObservationsPage = ({
         onExcludeTaxa={onExcludeTaxa}
         currentLocationId={currentLocationId}
         updateLocation={handleUpdateLocation}
+        currentTaxa={currentTaxa}
+        updateTaxa={handleUpdateTaxa}
+        currentSpeciesPool={currentSpeciesPool}
+        updateSpeciesPool={handleUpdateSpeciesPool}
         toggleEditExcludedTaxa={() =>
           setShowEditExcludedTaxa(!showEditExcludedTaxa)
         }

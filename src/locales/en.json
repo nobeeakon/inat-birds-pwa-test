@@ -42,5 +42,13 @@
   "selectLocation": "Select Location",
   "species": "Species",
   "speciesData": "Species Data",
+  "speciesPool": "Species pool",
+  "speciesPoolAll": "All species",
+  "speciesPoolTop100": "100 most common",
+  "speciesPoolTop20": "20 most common",
+  "speciesPoolTop50": "50 most common",
+  "taxa": "Taxa",
+  "taxaAves": "Birds",
+  "taxaPlantae": "Plants",
   "useCurrentLocation": "📍 Use Current Location"
 }

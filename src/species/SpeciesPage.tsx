@@ -9,6 +9,7 @@ import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import EditCategories from "@/species/EditCategories";
 import { notNullish } from "@/utils";
 import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
+import type { Taxa } from "@/taxa";
 // TODO use a different photo, selected from the observations
 // TODO add notes in the specie card
 
@@ -17,13 +18,17 @@ const SpeciesPage = ({
   lng,
   radius,
   currentLocationId,
+  currentTaxa,
   updateLocation,
+  updateTaxa,
 }: {
   lat: number;
   lng: number;
   radius: number;
   currentLocationId: string;
+  currentTaxa: Taxa;
   updateLocation: (newLocationId: string) => void;
+  updateTaxa: (newTaxa: Taxa) => void;
 }) => {
   const { t } = useTranslation();
   const [showCategories, setShowCategories] = useState(false);
@@ -67,7 +72,13 @@ const SpeciesPage = ({
     });
   };
 
-  const speciesData = useFetchSpecies({ lat, lng, radius, numberOfPages: 10 });
+  const speciesData = useFetchSpecies({
+    lat,
+    lng,
+    radius,
+    taxa: currentTaxa,
+    numberOfPages: 10,
+  });
 
   const filteredSpeciesData =
     !searchTerm || !speciesData.data
@@ -98,6 +109,8 @@ const SpeciesPage = ({
       <Header
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
+        currentTaxa={currentTaxa}
+        updateTaxa={updateTaxa}
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
@@ -158,13 +171,17 @@ const SpeciesPageWrapper = ({
   lng,
   radius,
   currentLocationId,
+  currentTaxa,
   updateLocation,
+  updateTaxa,
 }: {
   lat: number;
   lng: number;
   radius: number;
   currentLocationId: string;
+  currentTaxa: Taxa;
   updateLocation: (newLocationId: string) => void;
+  updateTaxa: (newTaxa: Taxa) => void;
 }) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -186,7 +203,9 @@ const SpeciesPageWrapper = ({
       lng={lng}
       radius={radius}
       currentLocationId={currentLocationId}
+      currentTaxa={currentTaxa}
       updateLocation={updateLocation}
+      updateTaxa={updateTaxa}
     />
   );
 };

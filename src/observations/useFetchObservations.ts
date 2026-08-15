@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
 import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
 import type { SpeciesData } from "@/species/useFetchSpecies";
+import type { Taxa } from "@/taxa";
+import { SPECIES_POOL_LIMITS } from "@/speciesPool";
+import type { SpeciesPool } from "@/speciesPool";
 
 export type ObservationType = {
   uuid: string;
@@ -91,10 +94,14 @@ export const useFetchObservations = ({
   lat,
   lng,
   radius,
+  taxa,
+  speciesPool,
 }: {
   lat: number;
   lng: number;
   radius: number;
+  taxa: Taxa;
+  speciesPool: SpeciesPool;
 }) => {
   const [queries, setQueries] = useState<{
     loading: boolean;
@@ -118,21 +125,34 @@ export const useFetchObservations = ({
           lat,
           lng,
           radius,
+          taxa,
           perPage: 1,
-          page: 0,
+          page: 1,
         });
         const initialData = await fetchData<{
           total_results: number;
           results: SpeciesData[];
         }>(initialUrl);
 
-        const maxPages = Math.ceil(initialData.total_results / PAGE_SIZE);
+        const totalPages = Math.ceil(initialData.total_results / PAGE_SIZE);
 
-        const numberOfPagesToFetch = Math.ceil(SPECIES_NUMBER / PAGE_SIZE);
+        // species_counts is ordered by observation count descending, so capping the
+        // page range to the first N pages restricts the draw to the most common species.
+        const poolLimit = SPECIES_POOL_LIMITS[speciesPool];
+        const pagesInPool = poolLimit
+          ? Math.min(totalPages, Math.ceil(poolLimit / PAGE_SIZE))
+          : totalPages;
+
+        const numberOfPagesToFetch = Math.min(
+          Math.ceil(SPECIES_NUMBER / PAGE_SIZE),
+          pagesInPool
+        );
+        // iNaturalist pages are 1-indexed (page=0 returns page 1), so shift the
+        // zero-based draw up by one to reach every page exactly once.
         const speciesPages = selectRandomNumbers(
           numberOfPagesToFetch,
-          maxPages
-        );
+          pagesInPool
+        ).map((pageIndex) => pageIndex + 1);
 
         const speciesData: { results: SpeciesData[] }[] = [];
         for (const page of speciesPages) {
@@ -142,6 +162,7 @@ export const useFetchObservations = ({
             lat,
             lng,
             radius,
+            taxa,
             perPage: PAGE_SIZE,
             page,
           });
@@ -174,6 +195,7 @@ export const useFetchObservations = ({
             lat,
             lng,
             radius: observationRadius,
+            taxa,
             taxonId: speciesItem.taxon.id,
             perPage: 30,
             page: randomPage,
@@ -188,6 +210,7 @@ export const useFetchObservations = ({
               lat,
               lng,
               radius: observationRadius,
+              taxa,
               taxonId: speciesItem.taxon.id,
               perPage: 30,
               page: 0,
@@ -224,7 +247,7 @@ export const useFetchObservations = ({
     };
 
     fetchPagesData();
-  }, [lat, lng, radius]);
+  }, [lat, lng, radius, taxa, speciesPool]);
 
   return queries;
 };
