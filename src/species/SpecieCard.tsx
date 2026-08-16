@@ -56,11 +56,13 @@ const EditCategory = ({
 
 const SpecieCard = ({
   data,
+  idx,
   speciesCategories,
   allCategories,
   onCategoryChange,
 }: {
   data: SpeciesData;
+  idx?: number;
   speciesCategories: { id: string; name: string }[];
   allCategories: { id: string; name: string }[];
   onCategoryChange: (newCategory?: string) => void;
@@ -87,9 +89,20 @@ const SpecieCard = ({
       <CardContent>
         <Typography>
           <strong>
-            <i>{data.taxon.name}</i>
+            {idx != null && <span>{idx}. </span>}
+            <a
+              href={`https://mexico.inaturalist.org/taxa/${data.taxon.id}`}
+              target="blank"
+            >
+              {data.taxon.name}{" "}
+            </a>
           </strong>{" "}
-          ({data.taxon.preferred_common_name})<span> [{data.count}]</span>
+          ({data.taxon.preferred_common_name})<span> [{data.count}]</span>(
+          {data.taxon.establishment_means?.establishment_means}
+          {data.taxon.conservation_status?.status
+            ? `, ${data.taxon.conservation_status?.status}`
+            : ""}
+          )
         </Typography>
 
         {!!speciesCategories?.length && (

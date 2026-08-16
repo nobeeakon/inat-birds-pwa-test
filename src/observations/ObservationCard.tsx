@@ -79,9 +79,22 @@ const ObservationCard = ({
         <CardContent>
           <Typography>
             <strong>
-              <i>{data.taxon?.name}</i>
+              <a
+                target="blank"
+                href={`https://mexico.inaturalist.org/taxa/${data.taxon.id}`}
+              >
+                {data.taxon.name}{" "}
+              </a>
             </strong>{" "}
             ({data.taxon?.preferred_common_name})
+            {!data.taxon?.establishment_means?.establishment_means
+              ? null
+              : data.taxon?.establishment_means?.establishment_means}
+            {!data.taxon?.conservation_status?.status ? null : (
+              <>
+                [<strong>{data.taxon?.conservation_status?.status}</strong>]
+              </>
+            )}
           </Typography>
         </CardContent>
       )}

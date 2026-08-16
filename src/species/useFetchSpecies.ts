@@ -40,6 +40,10 @@ export type SpeciesData = {
     establishment_means?: {
       establishment_means: string;
     };
+    conservation_status?: {
+      id: number;
+      status: string;
+    };
   };
 };
 
