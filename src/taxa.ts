@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
  * To add one: append its iNaturalist iconic taxon name here, then add the matching
  * label in useTaxaLabels below. TypeScript will flag the missing label until you do.
  */
-export const TAXA = ["Aves", "Plantae"] as const;
+export const TAXA = ["Aves", "Plantae", "Amphibia"] as const;
 
 export type Taxa = (typeof TAXA)[number];
 
@@ -26,5 +26,6 @@ export const useTaxaLabels = (): Record<Taxa, string> => {
   return {
     Aves: t("taxaAves"),
     Plantae: t("taxaPlantae"),
+    Amphibia: t("taxaAmphibia"),
   };
 };

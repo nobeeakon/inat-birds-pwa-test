@@ -260,13 +260,15 @@ const ObservationsPage = ({
         {query.loading && <LoadingWithBirdFacts />}
         {!!query.error && <Typography>{t("errorOccurred")}</Typography>}
         {!!dataItem && (
-          <ObservationCard
-            key={`card-observation-${currendIdx}`}
-            data={dataItem}
-            onNext={(status: ObservationStatus) =>
-              onObservationIdentified(dataItem.uuid.toString(), status)
-            }
-          />
+          <>
+            <ObservationCard
+              key={`card-observation-${currendIdx}`}
+              data={dataItem}
+              onNext={(status: ObservationStatus) =>
+                onObservationIdentified(dataItem.uuid.toString(), status)
+              }
+            />
+          </>
         )}
       </Box>
     </Box>

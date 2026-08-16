@@ -49,6 +49,12 @@ export type ObservationType = {
   sounds: [];
   taxon: {
     id: number;
+    conservation_status?: {
+      status?: string;
+    };
+    establishment_means?: {
+      establishment_means: string;
+    };
     iconic_taxon_id: number;
     name: string;
     preferred_common_name: string;

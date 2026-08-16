@@ -140,7 +140,7 @@ const SpeciesPage = ({
               justifyContent: { xs: "center", sm: "flex-start" },
             }}
           >
-            {filteredSpeciesData.map((item) => {
+            {filteredSpeciesData.map((item, idx) => {
               const speciesInfo = speciesInfoContext.getSpeciesInfo(
                 item.taxon.id.toString()
               );
@@ -148,6 +148,7 @@ const SpeciesPage = ({
                 <SpecieCard
                   key={`spp-${item.taxon.id}`}
                   data={item}
+                  idx={!searchTerm ? idx + 1 : undefined}
                   speciesCategories={getCategoriesNames(
                     speciesInfo?.categoryIds || []
                   )}
