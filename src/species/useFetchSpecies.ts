@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
 import { sleep, getUrl } from "@/utils";
+import type { Taxa } from "@/taxa";
 
 type Photo = {
   id: number;
@@ -53,11 +54,13 @@ const fetchSpecies = async ({
   lat,
   lng,
   radius,
+  taxa,
   numberOfPages,
 }: {
   lat: number;
   lng: number;
   radius: number;
+  taxa: Taxa;
   numberOfPages: number;
 }) => {
   const result = [];
@@ -69,6 +72,7 @@ const fetchSpecies = async ({
       lat,
       lng,
       radius,
+      taxa,
       page,
       perPage: 50,
     });
@@ -89,11 +93,13 @@ export const useFetchSpecies = ({
   lat,
   lng,
   radius,
+  taxa,
   numberOfPages = 10,
 }: {
   lat: number;
   lng: number;
   radius: number;
+  taxa: Taxa;
   numberOfPages?: number;
 }) => {
   const [queries, setQueries] = useState<{
@@ -111,7 +117,13 @@ export const useFetchSpecies = ({
 
       setQueries({ loading: true, data: null, error: null });
       try {
-        const data = await fetchSpecies({ lat, lng, radius, numberOfPages });
+        const data = await fetchSpecies({
+          lat,
+          lng,
+          radius,
+          taxa,
+          numberOfPages,
+        });
 
         setQueries({ loading: false, data, error: null });
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -121,7 +133,7 @@ export const useFetchSpecies = ({
     };
 
     fetchPagesData();
-  }, [lat, lng, radius, numberOfPages]);
+  }, [lat, lng, radius, taxa, numberOfPages]);
 
   return queries;
 };

@@ -43,5 +43,13 @@
   "selectLocation": "Seleccionar Ubicación",
   "species": "Especies",
   "speciesData": "Datos de Especies",
+  "speciesPool": "Conjunto de especies",
+  "speciesPoolAll": "Todas las especies",
+  "speciesPoolTop100": "100 más comunes",
+  "speciesPoolTop20": "20 más comunes",
+  "speciesPoolTop50": "50 más comunes",
+  "taxa": "Taxones",
+  "taxaAves": "Aves",
+  "taxaPlantae": "Plantas",
   "useCurrentLocation": "📍 Usar ubicación actual"
 }

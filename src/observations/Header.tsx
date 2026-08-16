@@ -16,6 +16,10 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 
 import { useLocationsContext } from "@/LocationsContext";
+import TaxaSelector from "@/components/TaxaSelector";
+import SpeciesPoolSelector from "@/components/SpeciesPoolSelector";
+import type { Taxa } from "@/taxa";
+import type { SpeciesPool } from "@/speciesPool";
 
 export type StoredUrlType = {
   name: string;
@@ -25,11 +29,19 @@ export type StoredUrlType = {
 const Header = ({
   currentLocationId,
   updateLocation,
+  currentTaxa,
+  updateTaxa,
+  currentSpeciesPool,
+  updateSpeciesPool,
   onExcludeTaxa,
   toggleEditExcludedTaxa,
 }: {
   currentLocationId: string;
   updateLocation: (newLocationId: string) => void;
+  currentTaxa: Taxa;
+  updateTaxa: (newTaxa: Taxa) => void;
+  currentSpeciesPool: SpeciesPool;
+  updateSpeciesPool: (newSpeciesPool: SpeciesPool) => void;
   onExcludeTaxa: () => void;
   toggleEditExcludedTaxa: () => void;
 }) => {
@@ -51,16 +63,20 @@ const Header = ({
             <MenuIcon />
           </IconButton>
           <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
-            <Button      variant="outlined"
-              color="inherit" component={Link} to="/species">
+            <Button
+              variant="outlined"
+              color="inherit"
+              component={Link}
+              to="/species"
+            >
               {t("species")}
             </Button>
-            <Button      variant="outlined"
-              color="inherit" onClick={onExcludeTaxa}>
+            <Button variant="outlined" color="inherit" onClick={onExcludeTaxa}>
               {t("exclude")}
             </Button>
             <Button
               variant="outlined"
+              color="inherit"
               onClick={() => setShowConfig(!showConfig)}
             >
               {t("config")}
@@ -98,6 +114,11 @@ const Header = ({
               ))}
             </Select>
           </FormControl>
+          <TaxaSelector currentTaxa={currentTaxa} updateTaxa={updateTaxa} />
+          <SpeciesPoolSelector
+            currentSpeciesPool={currentSpeciesPool}
+            updateSpeciesPool={updateSpeciesPool}
+          />
           <Button component={Link} to="/locations">
             {t("editLocations")}
           </Button>
