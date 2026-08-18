@@ -43,12 +43,15 @@ export const useCurrentLocation = (): UseCurrentLocationReturn => {
     return locations[0].id;
   }, [locations, urlLocationId]);
 
-  // Sync URL param when current location changes, preserving other params (e.g. taxon)
+  // Sync URL param when current location changes, preserving other params (e.g.
+  // taxon). Read from the live URL instead of the params of the last render: the
+  // other persisted options sync in the same effect flush, and each would otherwise
+  // overwrite what the previous ones had just written.
   useEffect(() => {
     if (currentLocationId && urlLocationId !== currentLocationId) {
       setSearchParams(
-        (previousParams) => {
-          const nextParams = new URLSearchParams(previousParams);
+        () => {
+          const nextParams = new URLSearchParams(window.location.search);
           nextParams.set("location", currentLocationId);
           return nextParams;
         },
@@ -68,8 +71,8 @@ export const useCurrentLocation = (): UseCurrentLocationReturn => {
 
   const setCurrentLocationId = (id: string) => {
     storage.set(LOCAL_STORAGE_KEY.currentLocationId, id);
-    setSearchParams((previousParams) => {
-      const nextParams = new URLSearchParams(previousParams);
+    setSearchParams(() => {
+      const nextParams = new URLSearchParams(window.location.search);
       nextParams.set("location", id);
       return nextParams;
     });

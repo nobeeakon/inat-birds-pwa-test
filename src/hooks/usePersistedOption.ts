@@ -39,11 +39,13 @@ export const usePersistedOption = <T extends string>({
   }, [urlValue, storageKey, defaultValue, isValidValue]);
 
   // Merge into the existing params rather than replacing them, so the other
-  // persisted options in the URL survive.
+  // persisted options in the URL survive. Read from the live URL instead of the
+  // params of the last render: the options sync in the same effect flush, and each
+  // would otherwise overwrite what the previous ones had just written.
   const writeToUrl = useCallback(
     (value: T, options?: { replace?: boolean }) => {
-      setSearchParams((previousParams) => {
-        const nextParams = new URLSearchParams(previousParams);
+      setSearchParams(() => {
+        const nextParams = new URLSearchParams(window.location.search);
         nextParams.set(searchParamName, value);
         return nextParams;
       }, options);
@@ -61,10 +63,14 @@ export const usePersistedOption = <T extends string>({
     storage.set(storageKey, currentValue);
   }, [currentValue, storageKey]);
 
-  const setValue = (value: T) => {
-    storage.set(storageKey, value);
-    writeToUrl(value);
-  };
+  // Stable so callers can use it as an effect dependency
+  const setValue = useCallback(
+    (value: T) => {
+      storage.set(storageKey, value);
+      writeToUrl(value);
+    },
+    [storageKey, writeToUrl]
+  );
 
   return [currentValue, setValue];
 };
