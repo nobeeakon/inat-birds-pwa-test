@@ -3,6 +3,7 @@ export const LOCAL_STORAGE_KEY = {
   currentTaxa: "current_taxa",
   currentSpeciesPool: "current_species_pool",
   locationsInfo: "locations_info",
+  cachedObservations: "cached_observations",
   STORED_URLS_KEY: "stored-urls",
   LAST_URL_KEY: "last-url",
   EXCLUDED_TAXA_STORAGE_KEY: "excluded-taxa",

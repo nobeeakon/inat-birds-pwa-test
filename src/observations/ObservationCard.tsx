@@ -7,19 +7,22 @@ import {
   CardMedia,
   Button,
   Box,
-  Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
+import TaxonSummary from "@/components/TaxonSummary";
+import SpeciesCategories from "@/components/SpeciesCategories";
 import { type ObservationType } from "@/observations/useFetchObservations";
 import type { ObservationStatus } from "@/observations/types";
 
 const ObservationCard = ({
   data,
   onNext,
+  onExcludeTaxa,
 }: {
   data: ObservationType;
   onNext: (observationStatus: ObservationStatus) => void;
+  onExcludeTaxa: () => void;
 }) => {
   const [showTaxa, setShowTaxa] = useState(false);
   const [photoIdx, setPhotoIdx] = useState(0);
@@ -77,25 +80,21 @@ const ObservationCard = ({
 
       {showTaxa && (
         <CardContent>
-          <Typography>
-            <strong>
-              <a
-                target="blank"
-                href={`https://mexico.inaturalist.org/taxa/${data.taxon.id}`}
-              >
-                {data.taxon.name}{" "}
-              </a>
-            </strong>{" "}
-            ({data.taxon?.preferred_common_name})
-            {!data.taxon?.establishment_means?.establishment_means
-              ? null
-              : data.taxon?.establishment_means?.establishment_means}
-            {!data.taxon?.conservation_status?.status ? null : (
-              <>
-                [<strong>{data.taxon?.conservation_status?.status}</strong>]
-              </>
-            )}
-          </Typography>
+          <TaxonSummary
+            taxonId={data.taxon.id}
+            scientificName={data.taxon.name}
+            details={[
+              data.taxon?.preferred_common_name,
+              data.family,
+              data.taxon?.establishment_means?.establishment_means,
+              data.taxon?.conservation_status?.status,
+            ]}
+          />
+
+          <SpeciesCategories
+            taxonId={data.taxon.id}
+            speciesName={data.taxon.name}
+          />
         </CardContent>
       )}
 
@@ -128,6 +127,17 @@ const ObservationCard = ({
           )}
         </Box>
       )}
+
+      <CardActions sx={{ justifyContent: "flex-end" }}>
+        <Button
+          size="small"
+          variant="outlined"
+          color="error"
+          onClick={onExcludeTaxa}
+        >
+          {t("exclude")}
+        </Button>
+      </CardActions>
     </Card>
   );
 };

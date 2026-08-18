@@ -12,6 +12,7 @@ import {
   AppBar,
   Toolbar,
   IconButton,
+  Link as MuiLink,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 
@@ -44,27 +45,28 @@ const Header = ({
             size="large"
             edge="start"
             color="inherit"
-            aria-label="menu"
+            aria-label={t("config")}
+            aria-expanded={showConfig}
+            onClick={() => setShowConfig(!showConfig)}
             sx={{ mr: 2 }}
           >
             <MenuIcon />
           </IconButton>
-          <Stack direction="row" spacing={1} sx={{ flexGrow: 1 }}>
-            <Button
-              variant="outlined"
-              color="inherit"
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            sx={{ flexGrow: 1 }}
+          >
+            <MuiLink
               component={Link}
               to="/observations"
+              color="inherit"
+              underline="always"
+              sx={{ "&:hover": { opacity: 0.8 } }}
             >
               {t("observations")}
-            </Button>
-            <Button
-              variant="outlined"
-              color="inherit"
-              onClick={() => setShowConfig(!showConfig)}
-            >
-              {t("config")}
-            </Button>
+            </MuiLink>
           </Stack>
         </Toolbar>
       </AppBar>
