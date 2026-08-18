@@ -1,77 +1,18 @@
-import { useState } from "react";
-import {
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Typography,
-  Button,
-  Box,
-  Chip,
-} from "@mui/material";
+import { Card, CardMedia, CardContent } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import TaxonSummary from "@/components/TaxonSummary";
+import SpeciesCategories from "@/components/SpeciesCategories";
 import type { SpeciesData } from "@/species/useFetchSpecies";
+import { getFamilyName } from "@/taxonomy";
 
-const EditCategory = ({
-  speciesCategories,
-  allCategories,
-  onUpdateCategories,
-  onClose,
-}: {
-  speciesCategories: { id: string; name: string }[];
-  allCategories: { id: string; name: string }[];
-  onUpdateCategories: (newCategoryId: string) => void;
-  onClose: () => void;
-}) => {
-  const sortedCategories = allCategories.sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
-
-  return (
-    <Box>
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-        {sortedCategories.map((categoryItem) => (
-          <Chip
-            key={categoryItem.id}
-            label={categoryItem.name}
-            onClick={() => onUpdateCategories(categoryItem.id)}
-            color={
-              speciesCategories?.some((cat) => cat.id === categoryItem.id)
-                ? "primary"
-                : "default"
-            }
-            variant={
-              speciesCategories?.some((cat) => cat.id === categoryItem.id)
-                ? "filled"
-                : "outlined"
-            }
-          />
-        ))}
-      </Box>
-      <Box>
-        <Button onClick={onClose}>Cerrar</Button>
-      </Box>
-    </Box>
-  );
-};
-
-const SpecieCard = ({
-  data,
-  idx,
-  speciesCategories,
-  allCategories,
-  onCategoryChange,
-}: {
-  data: SpeciesData;
-  idx?: number;
-  speciesCategories: { id: string; name: string }[];
-  allCategories: { id: string; name: string }[];
-  onCategoryChange: (newCategory?: string) => void;
-}) => {
-  const [editCategory, setEditCategory] = useState(false);
+const SpecieCard = ({ data, idx }: { data: SpeciesData; idx?: number }) => {
+  const { t } = useTranslation();
 
   const imageUrl =
     (data.taxon.default_photo?.square_url?.replace("square", "medium") || "") +
     "?cache=true";
+
+  const familyName = getFamilyName(data.taxon.ancestors);
 
   return (
     <Card sx={{ maxWidth: 400, width: "100%" }}>
@@ -87,43 +28,24 @@ const SpecieCard = ({
         }}
       />
       <CardContent>
-        <Typography>
-          <strong>
-            {idx != null && <span>{idx}. </span>}
-            <a
-              href={`https://mexico.inaturalist.org/taxa/${data.taxon.id}`}
-              target="blank"
-            >
-              {data.taxon.name}{" "}
-            </a>
-          </strong>{" "}
-          ({data.taxon.preferred_common_name})<span> [{data.count}]</span>(
-          {data.taxon.establishment_means?.establishment_means}
-          {data.taxon.conservation_status?.status
-            ? `, ${data.taxon.conservation_status?.status}`
-            : ""}
-          )
-        </Typography>
+        <TaxonSummary
+          taxonId={data.taxon.id}
+          scientificName={data.taxon.name}
+          index={idx}
+          details={[
+            data.taxon.preferred_common_name,
+            familyName,
+            t("observationCount", { count: data.count }),
+            data.taxon.establishment_means?.establishment_means,
+            data.taxon.conservation_status?.status,
+          ]}
+        />
 
-        {!!speciesCategories?.length && (
-          <Typography>
-            Category: {speciesCategories.map((cat) => cat.name).join(", ")}
-          </Typography>
-        )}
+        <SpeciesCategories
+          taxonId={data.taxon.id}
+          speciesName={data.taxon.name}
+        />
       </CardContent>
-
-      <CardActions>
-        {!editCategory ? (
-          <Button onClick={() => setEditCategory(true)}>Edit Category</Button>
-        ) : (
-          <EditCategory
-            allCategories={allCategories}
-            speciesCategories={speciesCategories}
-            onUpdateCategories={onCategoryChange}
-            onClose={() => setEditCategory(false)}
-          />
-        )}
-      </CardActions>
     </Card>
   );
 };

@@ -1,5 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
+import type { SpeciesData } from "@/species/useFetchSpecies";
+import type { Taxa } from "@/taxa";
+
 export type Category = {
   id: string;
   name: string;
@@ -22,6 +25,16 @@ export type CachedSpeciesInfo = {
   timestamp: number;
 };
 
+// The species list of a location, kept to fill the species page while it reloads.
+// Too big for localStorage: a location can have hundreds of species.
+export type CachedSpeciesList = {
+  id: string; // Primary key, location and taxa the list belongs to
+  locationId: string;
+  taxa: Taxa;
+  species: SpeciesData[];
+  timestamp: number;
+};
+
 // Database schema
 interface BirdsDB extends DBSchema {
   speciesInfo: {
@@ -32,6 +45,11 @@ interface BirdsDB extends DBSchema {
   categories: {
     key: string; // id
     value: Category;
+  };
+
+  speciesLists: {
+    key: string; // id
+    value: CachedSpeciesList;
   };
 
   speciesNotes: {
@@ -47,7 +65,7 @@ let dbInstance: IDBPDatabase<BirdsDB> | null = null;
 
 async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
   if (!dbInstance) {
-    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 2, {
+    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 3, {
       async upgrade(db, oldVersion, _newVersion, transaction) {
         // Version 1: Create initial speciesNotes store
         if (oldVersion < 1) {
@@ -92,6 +110,15 @@ async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
             });
           }
         }
+
+        // Version 3: Add the cached species lists store
+        if (oldVersion < 3) {
+          if (!db.objectStoreNames.contains("speciesLists")) {
+            db.createObjectStore("speciesLists", {
+              keyPath: "id",
+            });
+          }
+        }
       },
     });
   }
@@ -115,6 +142,25 @@ export const speciesInfoStore = {
   getAll: async (): Promise<CachedSpeciesInfo[]> => {
     const db = await getDB();
     return await db.getAll("speciesInfo");
+  },
+};
+
+export const speciesListsStore = {
+  set: async (speciesList: CachedSpeciesList): Promise<void> => {
+    const db = await getDB();
+    await db.put("speciesLists", speciesList);
+  },
+  get: async (id: string): Promise<CachedSpeciesList | undefined> => {
+    const db = await getDB();
+    return await db.get("speciesLists", id);
+  },
+  getAll: async (): Promise<CachedSpeciesList[]> => {
+    const db = await getDB();
+    return await db.getAll("speciesLists");
+  },
+  delete: async (id: string): Promise<void> => {
+    const db = await getDB();
+    await db.delete("speciesLists", id);
   },
 };
 

@@ -7,13 +7,15 @@ const theme = createTheme({
       main: "#646cff",
       contrastText: "#fff",
     },
+    // MUI derives shades from these with lighten()/darken(), which only parse
+    // numeric formats: CSS colour names such as "lightgreen" throw at runtime
     success: {
       main: "#4caf50",
-      light: "lightgreen",
+      light: "#90ee90", // lightgreen
     },
     info: {
       main: "#2196f3",
-      light: "lightblue",
+      light: "#add8e6", // lightblue
     },
   },
   shape: {

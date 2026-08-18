@@ -1,30 +1,31 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/species/Header";
-import { useFetchSpecies } from "@/species/useFetchSpecies";
 import SpecieCard from "@/species/SpecieCard";
-import { Box, TextField } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Chip,
+  CircularProgress,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
+import { useSpeciesData } from "@/BirdDataContext";
 import EditCategories from "@/species/EditCategories";
 import { notNullish } from "@/utils";
+import { getFamilyName } from "@/taxonomy";
 import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
 import type { Taxa } from "@/taxa";
 // TODO use a different photo, selected from the observations
-// TODO add notes in the specie card
 
 const SpeciesPage = ({
-  lat,
-  lng,
-  radius,
   currentLocationId,
   currentTaxa,
   updateLocation,
   updateTaxa,
 }: {
-  lat: number;
-  lng: number;
-  radius: number;
   currentLocationId: string;
   currentTaxa: Taxa;
   updateLocation: (newLocationId: string) => void;
@@ -33,14 +34,13 @@ const SpeciesPage = ({
   const { t } = useTranslation();
   const [showCategories, setShowCategories] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
 
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
-
-  const categories =
-    categoriesContext.state.status === "success"
-      ? Array.from(categoriesContext.state.data.values())
-      : [];
+  const speciesData = useSpeciesData();
 
   const getCategoriesNames = (categoryIds: string[]) => {
     return categoryIds
@@ -48,61 +48,89 @@ const SpeciesPage = ({
       .filter(notNullish);
   };
 
-  const onSpecieCategoryChange = async (
-    taxonId: number,
-    newCategoryId: string
-  ) => {
-    const stringTaxonId = taxonId.toString();
-    const existingInfo = speciesInfoContext.getSpeciesInfo(stringTaxonId);
-
-    let categoryIds = existingInfo?.categoryIds || [];
-
-    if (categoryIds.includes(newCategoryId)) {
-      // Remove category
-      categoryIds = categoryIds.filter((id) => id !== newCategoryId);
-    } else {
-      // Add category
-      categoryIds = [...categoryIds, newCategoryId];
+  // How many species of this location carry each category, so the filter only
+  // offers categories that lead somewhere
+  const speciesCountByCategoryId = new Map<string, number>();
+  for (const item of speciesData.species ?? []) {
+    const speciesInfo = speciesInfoContext.getSpeciesInfo(
+      item.taxon.id.toString()
+    );
+    for (const categoryId of speciesInfo?.categoryIds ?? []) {
+      speciesCountByCategoryId.set(
+        categoryId,
+        (speciesCountByCategoryId.get(categoryId) ?? 0) + 1
+      );
     }
+  }
 
-    await speciesInfoContext.updateSpeciesInfo(stringTaxonId, {
-      ...existingInfo,
-      taxonId: stringTaxonId,
-      categoryIds,
-    });
-  };
+  const categoryFilters = Array.from(speciesCountByCategoryId.entries())
+    .map(([categoryId, speciesCount]) => {
+      const category = categoriesContext.getCategory(categoryId);
+      return category ? { ...category, speciesCount } : null;
+    })
+    .filter(notNullish)
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  const speciesData = useFetchSpecies({
-    lat,
-    lng,
-    radius,
-    taxa: currentTaxa,
-    numberOfPages: 10,
-  });
+  // A category deleted while selected leaves an id that matches nothing, which would
+  // strand the list on an empty result with no chip left to clear it
+  const activeCategoryId =
+    selectedCategoryId && categoriesContext.getCategory(selectedCategoryId)
+      ? selectedCategoryId
+      : null;
+
+  const matchesCategory = (categoryIds: string[]) =>
+    activeCategoryId === null || categoryIds.includes(activeCategoryId);
+
+  const isFiltered = !!searchTerm || activeCategoryId !== null;
 
   const filteredSpeciesData =
-    !searchTerm || !speciesData.data
-      ? speciesData.data
-      : speciesData.data.filter((item) => {
-          const lowerSearchTerm = searchTerm.toLowerCase().trim();
+    speciesData.species?.filter((item) => {
+      const speciesInfo = speciesInfoContext.getSpeciesInfo(
+        item.taxon.id.toString()
+      );
+      const categoryIds = speciesInfo?.categoryIds || [];
 
-          const includesName = item.taxon.name
-            .toLowerCase()
-            .includes(lowerSearchTerm);
-          const includesCommonName = item.taxon.preferred_common_name
-            ?.toLowerCase()
-            .includes(lowerSearchTerm);
+      if (!matchesCategory(categoryIds)) {
+        return false;
+      }
 
-          const speciesInfo = speciesInfoContext.getSpeciesInfo(
-            item.taxon.id.toString()
-          );
-          const categories = getCategoriesNames(speciesInfo?.categoryIds || []);
-          const includesCategory = categories.some((category) =>
-            category.name.toLowerCase().includes(lowerSearchTerm)
-          );
+      if (!searchTerm) {
+        return true;
+      }
 
-          return includesName || includesCommonName || includesCategory;
-        });
+      const lowerSearchTerm = searchTerm.toLowerCase().trim();
+
+      const includesName = item.taxon.name
+        .toLowerCase()
+        .includes(lowerSearchTerm);
+      const includesCommonName = item.taxon.preferred_common_name
+        ?.toLowerCase()
+        .includes(lowerSearchTerm);
+
+      const includesFamily = getFamilyName(item.taxon.ancestors)
+        ?.toLowerCase()
+        .includes(lowerSearchTerm);
+
+      // iNaturalist returns these untranslated ("native", "introduced",
+      // "endemic"), which is also how the card shows them
+      const includesEstablishmentMeans =
+        item.taxon.establishment_means?.establishment_means
+          ?.toLowerCase()
+          .includes(lowerSearchTerm);
+
+      const categories = getCategoriesNames(categoryIds);
+      const includesCategory = categories.some((category) =>
+        category.name.toLowerCase().includes(lowerSearchTerm)
+      );
+
+      return (
+        includesName ||
+        includesCommonName ||
+        includesFamily ||
+        includesEstablishmentMeans ||
+        includesCategory
+      );
+    }) ?? null;
 
   return (
     <>
@@ -114,14 +142,32 @@ const SpeciesPage = ({
         onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
-      {speciesData.loading && <LoadingWithBirdFacts />}
       {speciesData.error && <div>{t("error")}</div>}
+      {/* The cached list stands in for the loading screen when there is one. It may
+          also still be deferred behind the observations request, which leaves it
+          null with nothing loading yet. */}
+      {!speciesData.error && speciesData.species === null && (
+        <LoadingWithBirdFacts />
+      )}
       {filteredSpeciesData && (
         <Box sx={{ p: 4 }}>
-          <h2>
-            {t("speciesData")} ({filteredSpeciesData.length} /{" "}
-            {speciesData.data?.length || 0})
-          </h2>
+          {speciesData.loading && speciesData.isCachedData && (
+            <Alert
+              severity="info"
+              icon={<CircularProgress size={20} />}
+              sx={{ mb: 2 }}
+            >
+              {t("loadingFreshSpecies")}
+            </Alert>
+          )}
+          <Box sx={{ mb: 1.5 }}>
+            <Typography variant="h6" component="h2" sx={{ lineHeight: 1.2 }}>
+              {t("species")}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {filteredSpeciesData.length} / {speciesData.species?.length || 0}
+            </Typography>
+          </Box>
 
           <TextField
             label={t("search")}
@@ -131,6 +177,39 @@ const SpeciesPage = ({
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{ mb: 2 }}
           />
+
+          {categoryFilters.length > 0 && (
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                component="p"
+              >
+                {t("filterByCategory")}
+              </Typography>
+              <Box
+                sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 0.5 }}
+                role="group"
+              >
+                {categoryFilters.map((category) => {
+                  const isActive = activeCategoryId === category.id;
+                  return (
+                    <Chip
+                      key={category.id}
+                      label={`${category.name} (${category.speciesCount})`}
+                      // Clicking the active one clears the filter
+                      onClick={() =>
+                        setSelectedCategoryId(isActive ? null : category.id)
+                      }
+                      color={isActive ? "primary" : "default"}
+                      variant={isActive ? "filled" : "outlined"}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
+
           {showCategories && <EditCategories />}
           <Box
             sx={{
@@ -140,25 +219,13 @@ const SpeciesPage = ({
               justifyContent: { xs: "center", sm: "flex-start" },
             }}
           >
-            {filteredSpeciesData.map((item, idx) => {
-              const speciesInfo = speciesInfoContext.getSpeciesInfo(
-                item.taxon.id.toString()
-              );
-              return (
-                <SpecieCard
-                  key={`spp-${item.taxon.id}`}
-                  data={item}
-                  idx={!searchTerm ? idx + 1 : undefined}
-                  speciesCategories={getCategoriesNames(
-                    speciesInfo?.categoryIds || []
-                  )}
-                  allCategories={categories}
-                  onCategoryChange={(newCategoryId) => {
-                    onSpecieCategoryChange(item.taxon.id, newCategoryId || "");
-                  }}
-                />
-              );
-            })}
+            {filteredSpeciesData.map((item, idx) => (
+              <SpecieCard
+                key={`spp-${item.taxon.id}`}
+                data={item}
+                idx={!isFiltered ? idx + 1 : undefined}
+              />
+            ))}
           </Box>
         </Box>
       )}
@@ -166,49 +233,4 @@ const SpeciesPage = ({
   );
 };
 
-// Wrapper to delay SpeciesPage load by 5 seconds to prevent iNaturalist API rate limiting
-const SpeciesPageWrapper = ({
-  lat,
-  lng,
-  radius,
-  currentLocationId,
-  currentTaxa,
-  updateLocation,
-  updateTaxa,
-}: {
-  lat: number;
-  lng: number;
-  radius: number;
-  currentLocationId: string;
-  currentTaxa: Taxa;
-  updateLocation: (newLocationId: string) => void;
-  updateTaxa: (newTaxa: Taxa) => void;
-}) => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <LoadingWithBirdFacts />;
-  }
-
-  return (
-    <SpeciesPage
-      lat={lat}
-      lng={lng}
-      radius={radius}
-      currentLocationId={currentLocationId}
-      currentTaxa={currentTaxa}
-      updateLocation={updateLocation}
-      updateTaxa={updateTaxa}
-    />
-  );
-};
-
-export default SpeciesPageWrapper;
+export default SpeciesPage;
