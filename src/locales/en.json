@@ -1,7 +1,6 @@
 {
   "actions": "Actions",
   "add": "Add",
-  "addCategory": "Add category",
   "addLocation": "Add Location",
   "birdFacts.fact1": "Flying...",
   "birdFacts.fact2": "Singing...",
@@ -13,7 +12,7 @@
   "birdFacts.fact8": "Chirping...",
   "cancel": "Cancel",
   "categories": "Categories",
-  "clickOnMapEnabled": "✓ Click on Map Enabled",
+  "clickOnMapEnabled": "Click on Map Enabled",
   "config": "Config",
   "couldNotGetLocation": "Could not get your location",
   "data": "Data",
@@ -24,7 +23,7 @@
   "edit": "Edit",
   "editCategories": "Edit categories",
   "editLocations": "Edit Locations",
-  "enableClickOnMap": "📍 Enable Click on Map",
+  "enableClickOnMap": "Enable Click on Map",
   "error": "Error",
   "errorOccurred": "An error occurred",
   "exclude": "Exclude",
@@ -33,11 +32,9 @@
   "geolocationNotSupported": "Geolocation is not supported by your browser",
   "hideMenu": "Hide menu",
   "installApp": "Install App",
-  "latitude": "Latitude",
   "loadingFreshObservations": "Showing saved observations while new ones load",
   "loadingFreshSpecies": "Showing the saved species list while a new one loads",
   "locationNumber": "Location {{number}}",
-  "longitude": "Longitude",
   "moreSpeciesMatch_one": "{{count}} more species matches. Refine the search to see it.",
   "moreSpeciesMatch_other": "{{count}} more species match. Refine the search to see them.",
   "name": "Name",
@@ -67,5 +64,5 @@
   "taxaAmphibia": "Amphibia",
   "taxaAves": "Birds",
   "taxaPlantae": "Plants",
-  "useCurrentLocation": "📍 Use Current Location"
+  "useCurrentLocation": "Use Current Location"
 }

@@ -1,7 +1,6 @@
 {
   "actions": "Acciones",
   "add": "Agregar",
-  "addCategory": "Agregar categoría",
   "addLocation": "Agregar Ubicación",
   "birdFacts.fact1": "Volando...",
   "birdFacts.fact2": "Cantando...",
@@ -13,7 +12,7 @@
   "birdFacts.fact8": "Piando...",
   "cancel": "Cancelar",
   "categories": "Categorías",
-  "clickOnMapEnabled": "✓ Clic en mapa activado",
+  "clickOnMapEnabled": "Clic en mapa activado",
   "config": "Configuración",
   "couldNotGetLocation": "No se pudo obtener tu ubicación",
   "data": "Datos",
@@ -24,7 +23,7 @@
   "edit": "Editar",
   "editCategories": "Editar categorías",
   "editLocations": "Editar Ubicaciones",
-  "enableClickOnMap": "📍 Activar clic en mapa",
+  "enableClickOnMap": "Activar clic en mapa",
   "error": "Error",
   "errorOccurred": "Hubo un error",
   "exclude": "Excluir",
@@ -33,11 +32,9 @@
   "geolocationNotSupported": "La geolocalización no es compatible con tu navegador",
   "hideMenu": "Ocultar menú",
   "installApp": "Instalar App",
-  "latitude": "Latitud",
   "loadingFreshObservations": "Mostrando observaciones guardadas mientras se cargan las nuevas",
   "loadingFreshSpecies": "Mostrando la lista de especies guardada mientras se carga la nueva",
   "locationNumber": "Ubicación {{number}}",
-  "longitude": "Longitud",
   "moreSpeciesMatch_one": "{{count}} especie más coincide. Refina la búsqueda para verla.",
   "moreSpeciesMatch_many": "{{count}} especies más coinciden. Refina la búsqueda para verlas.",
   "moreSpeciesMatch_other": "{{count}} especies más coinciden. Refina la búsqueda para verlas.",
@@ -69,5 +66,5 @@
   "taxaAmphibia": "Anfibios",
   "taxaAves": "Aves",
   "taxaPlantae": "Plantas",
-  "useCurrentLocation": "📍 Usar ubicación actual"
+  "useCurrentLocation": "Usar ubicación actual"
 }

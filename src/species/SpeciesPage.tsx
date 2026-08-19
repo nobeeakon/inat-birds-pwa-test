@@ -6,7 +6,6 @@ import { Alert, Box, Chip, CircularProgress, Typography } from "@mui/material";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useSpeciesData } from "@/BirdDataContext";
-import EditCategories from "@/species/EditCategories";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
@@ -26,7 +25,6 @@ const SpeciesPage = ({
   updateTaxa: (newTaxa: Taxa) => void;
 }) => {
   const { t } = useTranslation();
-  const [showCategories, setShowCategories] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
@@ -147,7 +145,6 @@ const SpeciesPage = ({
         updateLocation={updateLocation}
         currentTaxa={currentTaxa}
         updateTaxa={updateTaxa}
-        onEditCategories={() => setShowCategories((prev) => !prev)}
       />
 
       {speciesData.error && <div>{t("error")}</div>}
@@ -211,7 +208,6 @@ const SpeciesPage = ({
             </Box>
           )}
 
-          {showCategories && <EditCategories />}
           <VirtualizedSpeciesGrid
             species={filteredSpeciesData}
             showIndex={!isFiltered}

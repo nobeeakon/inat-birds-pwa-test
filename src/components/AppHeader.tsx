@@ -14,8 +14,10 @@ import {
   Select,
   Stack,
   Toolbar,
+  useMediaQuery,
   Link as MuiLink,
 } from "@mui/material";
+import type { Theme } from "@mui/material/styles";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -32,9 +34,10 @@ const NAV_BAR_VISIBLE_STORAGE_KEY = "navBarVisible";
 const NAV_BAR_REGION_ID = "app-header-nav-bar";
 
 /**
- * The bar is hidden by default and toggled by a floating button, which keeps the top of a
- * phone screen for the page itself. Showing it restores the full nav bar: hamburger for
- * the config controls plus the link to the other page.
+ * On phones the bar is hidden by default and toggled by a floating button, which keeps the
+ * scarce vertical space for the page itself; showing it moves the toggle into the bar so
+ * nothing floats over the content. Wider screens have room to spare, so there the bar is
+ * always shown and there is nothing to toggle.
  */
 const AppHeader = ({
   navigateToLabel,
@@ -56,6 +59,9 @@ const AppHeader = ({
   extraActions?: ReactNode;
 }) => {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery((theme: Theme) =>
+    theme.breakpoints.down("sm")
+  );
   const [isNavBarVisible, setIsNavBarVisible] = useStorageState<boolean>(
     NAV_BAR_VISIBLE_STORAGE_KEY,
     false
@@ -63,9 +69,11 @@ const AppHeader = ({
   const [showConfig, setShowConfig] = useState(false);
   const locations = useLocationsContext().locationsInfo;
 
+  const isNavBarShown = !isMobile || isNavBarVisible;
+
   return (
     <Box component="header">
-      <Collapse in={isNavBarVisible} unmountOnExit>
+      <Collapse in={isNavBarShown} unmountOnExit>
         <Box id={NAV_BAR_REGION_ID}>
           <AppBar position="static">
             <Toolbar>
@@ -96,68 +104,90 @@ const AppHeader = ({
                   {navigateToLabel}
                 </MuiLink>
               </Stack>
+              {isMobile && (
+                <IconButton
+                  size="large"
+                  edge="end"
+                  color="inherit"
+                  aria-label={t("hideMenu")}
+                  aria-expanded
+                  aria-controls={NAV_BAR_REGION_ID}
+                  onClick={() => setIsNavBarVisible(false)}
+                >
+                  <KeyboardArrowUpIcon />
+                </IconButton>
+              )}
             </Toolbar>
           </AppBar>
           {showConfig && (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                flexWrap: "wrap",
-                mt: 2,
-                border: 1,
-                borderColor: "grey.300",
-                p: 1,
-              }}
-            >
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel id="location-selector-label">
-                  {t("data")}
-                </InputLabel>
-                <Select
-                  labelId="location-selector-label"
-                  id="location-selector"
-                  value={currentLocationId}
-                  label={t("data")}
-                  onChange={(e) => updateLocation(e.target.value)}
-                >
-                  <MenuItem value="">{t("selectLocation")}</MenuItem>
-                  {locations.map((locationItem) => (
-                    <MenuItem key={locationItem.id} value={locationItem.id}>
-                      {locationItem.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TaxaSelector currentTaxa={currentTaxa} updateTaxa={updateTaxa} />
-              {extraControls}
-              <Button component={Link} to="/locations">
-                {t("editLocations")}
-              </Button>
-              {extraActions}
+            <Box sx={{ mt: 2 }}>
+              <Box>
+                <Button component={Link} to="/locations">
+                  {t("editLocations")}
+                </Button>
+              </Box>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  border: 1,
+                  borderColor: "grey.300",
+                  p: 1,
+                }}
+              >
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel id="location-selector-label">
+                    {t("data")}
+                  </InputLabel>
+                  <Select
+                    labelId="location-selector-label"
+                    id="location-selector"
+                    value={currentLocationId}
+                    label={t("data")}
+                    onChange={(e) => updateLocation(e.target.value)}
+                  >
+                    <MenuItem value="">{t("selectLocation")}</MenuItem>
+                    {locations.map((locationItem) => (
+                      <MenuItem key={locationItem.id} value={locationItem.id}>
+                        {locationItem.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TaxaSelector
+                  currentTaxa={currentTaxa}
+                  updateTaxa={updateTaxa}
+                />
+                {extraControls}
+
+                {extraActions}
+              </Box>
             </Box>
           )}
         </Box>
       </Collapse>
 
-      <Fab
-        size="small"
-        color="primary"
-        aria-label={isNavBarVisible ? t("hideMenu") : t("showMenu")}
-        aria-expanded={isNavBarVisible}
-        aria-controls={NAV_BAR_REGION_ID}
-        onClick={() => setIsNavBarVisible(!isNavBarVisible)}
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          right: 16,
-          // Above the app bar so the button stays reachable while the bar is open
-          zIndex: (theme) => theme.zIndex.appBar + 1,
-        }}
-      >
-        {isNavBarVisible ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-      </Fab>
+      {isMobile && !isNavBarShown && (
+        <Fab
+          size="small"
+          color="primary"
+          aria-label={t("showMenu")}
+          aria-expanded={false}
+          aria-controls={NAV_BAR_REGION_ID}
+          onClick={() => setIsNavBarVisible(true)}
+          sx={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            zIndex: (theme) => theme.zIndex.appBar + 1,
+          }}
+        >
+          <KeyboardArrowDownIcon />
+        </Fab>
+      )}
     </Box>
   );
 };
