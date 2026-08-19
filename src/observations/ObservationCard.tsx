@@ -20,7 +20,7 @@ import type { ObservationStatus } from "@/observations/types";
  * same space: the previous/next buttons below stay put instead of jumping as the user
  * pages through photos, and both they and the difficulty buttons stay on screen.
  */
-const OBSERVATION_IMAGE_HEIGHT = "58dvh";
+const OBSERVATION_IMAGE_HEIGHT = "65dvh";
 
 const ObservationCard = ({
   data,
@@ -150,7 +150,7 @@ const ObservationCard = ({
         </Box>
       )}
 
-      <CardActions sx={{ justifyContent: "center" }}>
+      <CardActions sx={{ justifyContent: "center", mt: 2}}>
         <Button
           size="small"
           variant="outlined"

@@ -74,7 +74,8 @@ const InstallButton = () => {
       onClick={handleInstallClick}
       sx={{
         position: "fixed",
-        bottom: 16,
+        // Sits above the nav bar toggle, which occupies the same corner
+        bottom: 72,
         right: 16,
         zIndex: 1000,
         boxShadow: 3,
