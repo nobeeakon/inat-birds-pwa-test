@@ -150,7 +150,7 @@ const ObservationCard = ({
         </Box>
       )}
 
-      <CardActions sx={{ justifyContent: "center", mt: 2}}>
+      <CardActions sx={{ justifyContent: "center", mt: 2 }}>
         <Button
           size="small"
           variant="outlined"
