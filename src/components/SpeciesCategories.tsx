@@ -87,7 +87,7 @@ const SpeciesCategories = ({
   };
 
   return (
-    <Box sx={{ mt: 1 }}>
+    <Box sx={{ mt: 0.5 }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
         {assignedCategories.map((category) => (
           <Chip key={category.id} label={category.name} size="small" />

@@ -14,12 +14,15 @@ const TaxonSummary = ({
   taxonId,
   scientificName,
   index,
+  prominentName = false,
   details,
 }: {
   taxonId: number;
   scientificName: string;
   /** Position in the species list, shown before the name when the list is unfiltered. */
   index?: number;
+  /** Enlarges the name on small screens, for cards where it is the answer being revealed. */
+  prominentName?: boolean;
   /** Nullish entries are dropped, so callers can pass optional fields directly. */
   details: (string | null | undefined)[];
 }) => {
@@ -27,7 +30,10 @@ const TaxonSummary = ({
 
   return (
     <Box>
-      <Typography component="p">
+      <Typography
+        component="p"
+        sx={prominentName ? { fontSize: { xs: "1.4rem", sm: "1rem" } } : {}}
+      >
         <strong>
           {index != null && `${index}. `}
           <a

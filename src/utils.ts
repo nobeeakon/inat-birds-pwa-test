@@ -7,6 +7,16 @@ export const notNullish = <T>(value: T | null | undefined): value is T => {
 export const getRandomIndex = (length: number) =>
   Math.floor(Math.random() * length);
 
+/**
+ * Turns the square photo URL the API returns into the one the service worker keeps
+ * offline (see the photo caching rule in vite.config.ts). Every place that shows a
+ * species photo goes through here so they all hit the same cache entry.
+ */
+export const getCachedPhotoUrl = (
+  squareUrl: string | undefined
+): string | undefined =>
+  squareUrl ? `${squareUrl.replace("square", "medium")}?cache=true` : undefined;
+
 const SPECIES_URL = ({
   lat,
   lng,

@@ -1,16 +1,17 @@
+import { memo } from "react";
 import { Card, CardMedia, CardContent } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import TaxonSummary from "@/components/TaxonSummary";
 import SpeciesCategories from "@/components/SpeciesCategories";
+import SimilarSpecies from "@/species/SimilarSpecies";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import { getFamilyName } from "@/taxonomy";
+import { getCachedPhotoUrl } from "@/utils";
 
 const SpecieCard = ({ data, idx }: { data: SpeciesData; idx?: number }) => {
   const { t } = useTranslation();
 
-  const imageUrl =
-    (data.taxon.default_photo?.square_url?.replace("square", "medium") || "") +
-    "?cache=true";
+  const imageUrl = getCachedPhotoUrl(data.taxon.default_photo?.square_url);
 
   const familyName = getFamilyName(data.taxon.ancestors);
 
@@ -45,9 +46,13 @@ const SpecieCard = ({ data, idx }: { data: SpeciesData; idx?: number }) => {
           taxonId={data.taxon.id}
           speciesName={data.taxon.name}
         />
+
+        <SimilarSpecies species={data} />
       </CardContent>
     </Card>
   );
 };
 
-export default SpecieCard;
+// Scrolling and typing re-render the list around the cards; the species objects
+// themselves keep their identity, so the visible cards can skip those renders
+export default memo(SpecieCard);
