@@ -1,15 +1,8 @@
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/species/Header";
-import SpecieCard from "@/species/SpecieCard";
-import {
-  Alert,
-  Box,
-  Chip,
-  CircularProgress,
-  TextField,
-  Typography,
-} from "@mui/material";
+import VirtualizedSpeciesGrid from "@/species/VirtualizedSpeciesGrid";
+import { Alert, Box, Chip, CircularProgress, Typography } from "@mui/material";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useSpeciesData } from "@/BirdDataContext";
@@ -17,6 +10,7 @@ import EditCategories from "@/species/EditCategories";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
+import SpeciesSearchField from "@/species/SpeciesSearchField";
 import type { Taxa } from "@/taxa";
 // TODO use a different photo, selected from the observations
 
@@ -42,63 +36,68 @@ const SpeciesPage = ({
   const speciesInfoContext = useSpeciesInfoContext();
   const speciesData = useSpeciesData();
 
-  const getCategoriesNames = (categoryIds: string[]) => {
-    return categoryIds
-      .map((categoryId) => categoriesContext.getCategory(categoryId))
-      .filter(notNullish);
-  };
+  const { getCategory } = categoriesContext;
+  const { getSpeciesInfo } = speciesInfoContext;
+  const allSpecies = speciesData.species;
 
-  // How many species of this location carry each category, so the filter only
-  // offers categories that lead somewhere
-  const speciesCountByCategoryId = new Map<string, number>();
-  for (const item of speciesData.species ?? []) {
-    const speciesInfo = speciesInfoContext.getSpeciesInfo(
-      item.taxon.id.toString()
-    );
-    for (const categoryId of speciesInfo?.categoryIds ?? []) {
-      speciesCountByCategoryId.set(
-        categoryId,
-        (speciesCountByCategoryId.get(categoryId) ?? 0) + 1
-      );
+  // The search field commits its term here once typing pauses; deferring it on top of
+  // that keeps the filtering render, which walks hundreds of species, from blocking a
+  // keystroke that lands while it runs
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  const categoryFilters = useMemo(() => {
+    // How many species of this location carry each category, so the filter only
+    // offers categories that lead somewhere
+    const speciesCountByCategoryId = new Map<string, number>();
+    for (const item of allSpecies ?? []) {
+      const speciesInfo = getSpeciesInfo(item.taxon.id.toString());
+      for (const categoryId of speciesInfo?.categoryIds ?? []) {
+        speciesCountByCategoryId.set(
+          categoryId,
+          (speciesCountByCategoryId.get(categoryId) ?? 0) + 1
+        );
+      }
     }
-  }
 
-  const categoryFilters = Array.from(speciesCountByCategoryId.entries())
-    .map(([categoryId, speciesCount]) => {
-      const category = categoriesContext.getCategory(categoryId);
-      return category ? { ...category, speciesCount } : null;
-    })
-    .filter(notNullish)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(speciesCountByCategoryId.entries())
+      .map(([categoryId, speciesCount]) => {
+        const category = getCategory(categoryId);
+        return category ? { ...category, speciesCount } : null;
+      })
+      .filter(notNullish)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allSpecies, getSpeciesInfo, getCategory]);
 
   // A category deleted while selected leaves an id that matches nothing, which would
   // strand the list on an empty result with no chip left to clear it
   const activeCategoryId =
-    selectedCategoryId && categoriesContext.getCategory(selectedCategoryId)
+    selectedCategoryId && getCategory(selectedCategoryId)
       ? selectedCategoryId
       : null;
 
-  const matchesCategory = (categoryIds: string[]) =>
-    activeCategoryId === null || categoryIds.includes(activeCategoryId);
+  const isFiltered = !!deferredSearchTerm || activeCategoryId !== null;
 
-  const isFiltered = !!searchTerm || activeCategoryId !== null;
+  const filteredSpeciesData = useMemo(() => {
+    if (!allSpecies) {
+      return null;
+    }
 
-  const filteredSpeciesData =
-    speciesData.species?.filter((item) => {
-      const speciesInfo = speciesInfoContext.getSpeciesInfo(
-        item.taxon.id.toString()
-      );
+    const lowerSearchTerm = deferredSearchTerm.toLowerCase().trim();
+
+    return allSpecies.filter((item) => {
+      const speciesInfo = getSpeciesInfo(item.taxon.id.toString());
       const categoryIds = speciesInfo?.categoryIds || [];
 
-      if (!matchesCategory(categoryIds)) {
+      const matchesCategory =
+        activeCategoryId === null || categoryIds.includes(activeCategoryId);
+
+      if (!matchesCategory) {
         return false;
       }
 
-      if (!searchTerm) {
+      if (!lowerSearchTerm) {
         return true;
       }
-
-      const lowerSearchTerm = searchTerm.toLowerCase().trim();
 
       const includesName = item.taxon.name
         .toLowerCase()
@@ -118,10 +117,12 @@ const SpeciesPage = ({
           ?.toLowerCase()
           .includes(lowerSearchTerm);
 
-      const categories = getCategoriesNames(categoryIds);
-      const includesCategory = categories.some((category) =>
-        category.name.toLowerCase().includes(lowerSearchTerm)
-      );
+      const includesCategory = categoryIds
+        .map((categoryId) => getCategory(categoryId))
+        .filter(notNullish)
+        .some((category) =>
+          category.name.toLowerCase().includes(lowerSearchTerm)
+        );
 
       return (
         includesName ||
@@ -130,7 +131,14 @@ const SpeciesPage = ({
         includesEstablishmentMeans ||
         includesCategory
       );
-    }) ?? null;
+    });
+  }, [
+    allSpecies,
+    deferredSearchTerm,
+    activeCategoryId,
+    getSpeciesInfo,
+    getCategory,
+  ]);
 
   return (
     <>
@@ -169,14 +177,7 @@ const SpeciesPage = ({
             </Typography>
           </Box>
 
-          <TextField
-            label={t("search")}
-            variant="outlined"
-            size="small"
-            fullWidth
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ mb: 2 }}
-          />
+          <SpeciesSearchField onSearchTermChange={setSearchTerm} />
 
           {categoryFilters.length > 0 && (
             <Box sx={{ mb: 2 }}>
@@ -211,22 +212,10 @@ const SpeciesPage = ({
           )}
 
           {showCategories && <EditCategories />}
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              justifyContent: { xs: "center", sm: "flex-start" },
-            }}
-          >
-            {filteredSpeciesData.map((item, idx) => (
-              <SpecieCard
-                key={`spp-${item.taxon.id}`}
-                data={item}
-                idx={!isFiltered ? idx + 1 : undefined}
-              />
-            ))}
-          </Box>
+          <VirtualizedSpeciesGrid
+            species={filteredSpeciesData}
+            showIndex={!isFiltered}
+          />
         </Box>
       )}
     </>

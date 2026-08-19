@@ -15,6 +15,13 @@ import SpeciesCategories from "@/components/SpeciesCategories";
 import { type ObservationType } from "@/observations/useFetchObservations";
 import type { ObservationStatus } from "@/observations/types";
 
+/**
+ * Reserved as a fixed slice of the viewport so photos of any aspect ratio occupy the
+ * same space: the previous/next buttons below stay put instead of jumping as the user
+ * pages through photos, and both they and the difficulty buttons stay on screen.
+ */
+const OBSERVATION_IMAGE_HEIGHT = "58dvh";
+
 const ObservationCard = ({
   data,
   onNext,
@@ -46,7 +53,7 @@ const ObservationCard = ({
   };
 
   return (
-    <Card>
+    <Card elevation={0} square sx={{ backgroundColor: "transparent" }}>
       <CardActions sx={{ display: "flex", gap: 2, mb: 1 }}>
         <Button
           fullWidth
@@ -72,17 +79,18 @@ const ObservationCard = ({
         </Button>
       </CardActions>
 
-      <Box sx={{ textAlign: "center", m: 1 }}>
+      <Box sx={{ textAlign: "center", mx: 1 }}>
         <Button onClick={() => setShowTaxa(true)} color="info" fullWidth>
           Show
         </Button>
       </Box>
 
       {showTaxa && (
-        <CardContent>
+        <CardContent sx={{ pt: 0, pb: 0.5 }}>
           <TaxonSummary
             taxonId={data.taxon.id}
             scientificName={data.taxon.name}
+            prominentName
             details={[
               data.taxon?.preferred_common_name,
               data.family,
@@ -99,12 +107,26 @@ const ObservationCard = ({
       )}
 
       {!!imgUrl && (
-        <CardMedia
-          component="img"
-          image={imgUrl}
-          alt={data.taxon?.preferred_common_name || "Observation Photo"}
-          sx={{ maxWidth: 500, mx: "auto", display: "block" }}
-        />
+        <Box
+          sx={{
+            height: OBSERVATION_IMAGE_HEIGHT,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CardMedia
+            component="img"
+            image={imgUrl}
+            alt={data.taxon?.preferred_common_name || "Observation Photo"}
+            sx={{
+              height: "100%",
+              width: "100%",
+              maxWidth: 500,
+              objectFit: "contain",
+            }}
+          />
+        </Box>
       )}
 
       {data.photos.length > 1 && (
@@ -128,7 +150,7 @@ const ObservationCard = ({
         </Box>
       )}
 
-      <CardActions sx={{ justifyContent: "flex-end" }}>
+      <CardActions sx={{ justifyContent: "center" }}>
         <Button
           size="small"
           variant="outlined"
