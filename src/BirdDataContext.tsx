@@ -6,7 +6,12 @@ import {
   useFetchObservations,
   type ObservationType,
 } from "@/observations/useFetchObservations";
-import { useFetchSpecies, type SpeciesData } from "@/species/useFetchSpecies";
+import {
+  useFetchSpecies,
+  MAX_SPECIES_TO_FETCH,
+  type SpeciesData,
+} from "@/species/useFetchSpecies";
+import { useSpeciesPhotoPrefetch } from "@/species/useSpeciesPhotoPrefetch";
 import {
   selectNextIndex,
   type ReviewInfo,
@@ -16,8 +21,6 @@ import type { LocationInformation } from "@/types";
 import type { Taxa } from "@/taxa";
 import { getSpeciesPoolCategoryId } from "@/speciesPool";
 import type { SpeciesPool } from "@/speciesPool";
-
-const SPECIES_PAGES_TO_FETCH = 10;
 
 type BrowsingState = {
   key: string; // Identifies the observation set the position belongs to
@@ -66,6 +69,8 @@ type SpeciesQueryData = {
   error: boolean;
   isCachedData: boolean; // Showing a previous session's list until the fetch lands
   species: SpeciesData[] | null; // null while the fetch is still deferred or in flight
+  totalSpeciesCount: number | null; // Species the location has, fetched or not
+  isTruncated: boolean; // The location has more species than the fetch limit
 };
 
 type BirdDataContextType = {
@@ -181,9 +186,12 @@ const BirdDataContextProvider = ({
     lng: currentLocation.lng,
     radius: currentLocation.radius,
     taxa: currentTaxa,
-    numberOfPages: SPECIES_PAGES_TO_FETCH,
     enabled: observationsSettled || isSpeciesRoute,
   });
+
+  // The virtualized list only requests the photos of the rows on screen, so the list
+  // is walked here to fill the photo cache for the whole of it
+  useSpeciesPhotoPrefetch(speciesQuery.data);
 
   // A different location, taxa or species pool means a whole new set of observations,
   // so the browsing position is dropped while rendering rather than in an effect
@@ -267,6 +275,10 @@ const BirdDataContextProvider = ({
       error: !!speciesQuery.error,
       isCachedData: speciesQuery.isCachedData,
       species: speciesQuery.data,
+      totalSpeciesCount: speciesQuery.totalResults,
+      isTruncated:
+        speciesQuery.totalResults !== null &&
+        speciesQuery.totalResults > MAX_SPECIES_TO_FETCH,
     },
   };
 

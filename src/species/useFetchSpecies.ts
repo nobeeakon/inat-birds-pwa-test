@@ -58,20 +58,34 @@ type ResponseType = {
   results: SpeciesData[];
 };
 
+// Locations with more species than this only get their most observed ones: the
+// species page tells the user when its list was cut short
+export const MAX_SPECIES_TO_FETCH = 1500;
+
+// The largest page iNaturalist serves. Fewer, bigger requests keep the whole list
+// well under the rate limit and cut the wait: each page also costs a second of sleep.
+const SPECIES_PER_PAGE = 500;
+
+type FetchSpeciesResult = {
+  species: SpeciesData[];
+  totalResults: number;
+};
+
 const fetchSpecies = async ({
   lat,
   lng,
   radius,
   taxa,
-  numberOfPages,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
-  numberOfPages: number;
-}) => {
-  const result = [];
+}): Promise<FetchSpeciesResult> => {
+  const species: SpeciesData[] = [];
+  let totalResults = 0;
+
+  const numberOfPages = Math.ceil(MAX_SPECIES_TO_FETCH / SPECIES_PER_PAGE);
 
   for (let page = 1; page <= numberOfPages; page++) {
     await sleep(1000);
@@ -82,18 +96,28 @@ const fetchSpecies = async ({
       radius,
       taxa,
       page,
-      perPage: 50,
+      perPage: SPECIES_PER_PAGE,
     });
     const data = await fetchData<ResponseType>(pageUrl);
+
+    totalResults = data.total_results;
 
     if (data.results.length === 0) {
       break;
     }
 
-    result.push(...data.results);
+    species.push(...data.results);
+
+    // The location has no further pages to ask for
+    if (species.length >= totalResults) {
+      break;
+    }
   }
 
-  return result;
+  return {
+    species: species.slice(0, MAX_SPECIES_TO_FETCH),
+    totalResults,
+  };
 };
 
 // TODO do as infinite pager
@@ -103,7 +127,6 @@ export const useFetchSpecies = ({
   lng,
   radius,
   taxa,
-  numberOfPages = 10,
   enabled = true,
 }: {
   locationId: string;
@@ -111,15 +134,23 @@ export const useFetchSpecies = ({
   lng: number;
   radius: number;
   taxa: Taxa;
-  numberOfPages?: number;
   enabled?: boolean;
 }) => {
   const [queries, setQueries] = useState<{
     loading: boolean;
     data: null | SpeciesData[];
+    // How many species the location has, which can exceed the fetched ones. Null
+    // until a fetch lands, or when it came from a cache entry that predates it.
+    totalResults: number | null;
     error: boolean | null;
     isCachedData: boolean;
-  }>({ loading: false, data: null, error: null, isCachedData: false });
+  }>({
+    loading: false,
+    data: null,
+    totalResults: null,
+    error: null,
+    isCachedData: false,
+  });
 
   useEffect(() => {
     // The fetch is slow enough that the user can change location while it runs; its
@@ -131,6 +162,7 @@ export const useFetchSpecies = ({
         setQueries({
           loading: false,
           data: null,
+          totalResults: null,
           error: null,
           isCachedData: false,
         });
@@ -145,7 +177,8 @@ export const useFetchSpecies = ({
 
       setQueries({
         loading: true,
-        data: cachedSpecies,
+        data: cachedSpecies?.species ?? null,
+        totalResults: cachedSpecies?.totalResults ?? null,
         error: null,
         isCachedData: !!cachedSpecies,
       });
@@ -155,23 +188,27 @@ export const useFetchSpecies = ({
       }
 
       try {
-        const data = await fetchSpecies({
+        const { species, totalResults } = await fetchSpecies({
           lat,
           lng,
           radius,
           taxa,
-          numberOfPages,
         });
 
         // Refill the cache so the next start has a list to show right away. Worth
         // doing even for a stale request: the data is still valid for its own key.
-        await writeCachedSpeciesList({ locationId, taxa }, data);
+        await writeCachedSpeciesList(
+          { locationId, taxa },
+          species,
+          totalResults
+        );
 
         if (isStaleRequest) return;
 
         setQueries({
           loading: false,
-          data,
+          data: species,
+          totalResults,
           error: null,
           isCachedData: false,
         });
@@ -182,6 +219,7 @@ export const useFetchSpecies = ({
         setQueries({
           loading: false,
           data: null,
+          totalResults: null,
           error: true,
           isCachedData: false,
         });
@@ -193,7 +231,7 @@ export const useFetchSpecies = ({
     return () => {
       isStaleRequest = true;
     };
-  }, [locationId, lat, lng, radius, taxa, numberOfPages, enabled]);
+  }, [locationId, lat, lng, radius, taxa, enabled]);
 
   return queries;
 };

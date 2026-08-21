@@ -8,8 +8,9 @@ import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useSpeciesData } from "@/BirdDataContext";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
-import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
+import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import SpeciesSearchField from "@/species/SpeciesSearchField";
+import { MAX_SPECIES_TO_FETCH } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
 // TODO use a different photo, selected from the observations
 
@@ -152,7 +153,7 @@ const SpeciesPage = ({
           also still be deferred behind the observations request, which leaves it
           null with nothing loading yet. */}
       {!speciesData.error && speciesData.species === null && (
-        <LoadingWithBirdFacts />
+        <LoadingWithNatureFacts />
       )}
       {filteredSpeciesData && (
         <Box sx={{ p: 4 }}>
@@ -163,6 +164,14 @@ const SpeciesPage = ({
               sx={{ mb: 2 }}
             >
               {t("loadingFreshSpecies")}
+            </Alert>
+          )}
+          {speciesData.isTruncated && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t("speciesListTruncated", {
+                limit: MAX_SPECIES_TO_FETCH,
+                total: speciesData.totalSpeciesCount,
+              })}
             </Alert>
           )}
           <Box sx={{ mb: 1.5 }}>

@@ -33,14 +33,27 @@ const removeListsOfDeletedLocations = async (): Promise<void> => {
   );
 };
 
+export type CachedSpeciesListResult = {
+  species: SpeciesData[];
+  // Null for entries cached before the total was stored
+  totalResults: number | null;
+};
+
 export const readCachedSpeciesList = async (
   cacheKey: SpeciesListCacheKey
-): Promise<SpeciesData[] | null> => {
+): Promise<CachedSpeciesListResult | null> => {
   try {
     await removeListsOfDeletedLocations();
     const cachedList = await speciesListsStore.get(getCacheKey(cacheKey));
 
-    return cachedList?.species ?? null;
+    if (!cachedList) {
+      return null;
+    }
+
+    return {
+      species: cachedList.species,
+      totalResults: cachedList.totalResults ?? null,
+    };
   } catch (error) {
     // Without a cached list the page just falls back to its loading state
     console.warn("Failed to read the cached species list:", error);
@@ -50,7 +63,8 @@ export const readCachedSpeciesList = async (
 
 export const writeCachedSpeciesList = async (
   cacheKey: SpeciesListCacheKey,
-  species: SpeciesData[]
+  species: SpeciesData[],
+  totalResults: number
 ): Promise<void> => {
   // An empty result is not worth caching, and would drop a usable entry
   if (species.length === 0) {
@@ -62,6 +76,7 @@ export const writeCachedSpeciesList = async (
       id: getCacheKey(cacheKey),
       ...cacheKey,
       species,
+      totalResults,
       timestamp: Date.now(),
     });
   } catch (error) {

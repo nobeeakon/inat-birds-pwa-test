@@ -2,6 +2,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import {
+  PHOTO_CACHE_MAX_AGE_SECONDS,
+  PHOTO_CACHE_MAX_ENTRIES,
+  PHOTO_CACHE_NAME,
+  PHOTO_URL_PATTERN,
+} from "./src/photoCache";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -55,14 +61,14 @@ export default defineConfig({
             },
           },
           {
-            urlPattern:
-              /^https:\/\/inaturalist-open-data\.s3\.amazonaws\.com\/photos\/\d+\/medium\.jpg\?cache=true/i,
+            // Shared with the prefetch that fills this cache, see src/photoCache.ts
+            urlPattern: PHOTO_URL_PATTERN,
             handler: "CacheFirst",
             options: {
-              cacheName: "inat-photos-cache",
+              cacheName: PHOTO_CACHE_NAME,
               expiration: {
-                maxEntries: 900,
-                maxAgeSeconds: 60 * 60 * 24 * 2, // 2 days
+                maxEntries: PHOTO_CACHE_MAX_ENTRIES,
+                maxAgeSeconds: PHOTO_CACHE_MAX_AGE_SECONDS,
               },
               cacheableResponse: {
                 statuses: [0, 200],

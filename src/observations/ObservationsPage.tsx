@@ -11,7 +11,7 @@ import {
 
 import ObservationCard from "@/observations/ObservationCard";
 import Header from "@/observations/Header";
-import LoadingWithBirdFacts from "@/observations/LoadingWithBirdFacts";
+import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useObservationsData } from "@/BirdDataContext";
@@ -108,7 +108,7 @@ const ObservationsPage = ({
 
       <Box>
         {/* The cached observations stand in for the loading screen when there are any */}
-        {loading && observations.length === 0 && <LoadingWithBirdFacts />}
+        {loading && observations.length === 0 && <LoadingWithNatureFacts />}
         {error && <Typography>{t("errorOccurred")}</Typography>}
         {/* Reachable through a category pool: its species may have no observations
             nearby, or every one of them may have been excluded */}

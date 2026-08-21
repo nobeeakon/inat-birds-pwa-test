@@ -32,6 +32,9 @@ export type CachedSpeciesList = {
   locationId: string;
   taxa: Taxa;
   species: SpeciesData[];
+  // How many species the location has in total, which can be more than were
+  // fetched. Absent on entries written before it was stored.
+  totalResults?: number;
   timestamp: number;
 };
 

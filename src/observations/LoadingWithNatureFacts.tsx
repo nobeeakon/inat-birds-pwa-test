@@ -2,33 +2,45 @@ import { useState, useEffect } from "react";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-const LoadingWithBirdFacts = () => {
+const LoadingWithNatureFacts = () => {
   const { t } = useTranslation();
   const [currentFactIndex, setCurrentFactIndex] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
 
-  const birdFacts = [
-    t("birdFacts.fact1"),
-    t("birdFacts.fact2"),
-    t("birdFacts.fact3"),
-    t("birdFacts.fact4"),
-    t("birdFacts.fact5"),
-    t("birdFacts.fact6"),
-    t("birdFacts.fact7"),
-    t("birdFacts.fact8"),
+  const natureFacts = [
+    t("natureFacts.fact1"),
+    t("natureFacts.fact2"),
+    t("natureFacts.fact3"),
+    t("natureFacts.fact4"),
+    t("natureFacts.fact5"),
+    t("natureFacts.fact6"),
+    t("natureFacts.fact7"),
+    t("natureFacts.fact8"),
+    t("natureFacts.fact9"),
+    t("natureFacts.fact10"),
+    t("natureFacts.fact11"),
+    t("natureFacts.fact12"),
+    t("natureFacts.fact13"),
+    t("natureFacts.fact14"),
+    t("natureFacts.fact15"),
+    t("natureFacts.fact16"),
+    t("natureFacts.fact17"),
+    t("natureFacts.fact18"),
   ];
 
   useEffect(() => {
     const intervalId = setInterval(() => {
       setIsExiting(true);
       setTimeout(() => {
-        setCurrentFactIndex((prevIndex) => (prevIndex + 1) % birdFacts.length);
+        setCurrentFactIndex(
+          (prevIndex) => (prevIndex + 1) % natureFacts.length
+        );
         setIsExiting(false);
       }, 500);
     }, 4000);
 
     return () => clearInterval(intervalId);
-  }, [birdFacts.length]);
+  }, [natureFacts.length]);
 
   return (
     <Box
@@ -86,11 +98,11 @@ const LoadingWithBirdFacts = () => {
             },
           }}
         >
-          {birdFacts[currentFactIndex]}
+          {natureFacts[currentFactIndex]}
         </Typography>
       </Box>
     </Box>
   );
 };
 
-export default LoadingWithBirdFacts;
+export default LoadingWithNatureFacts;
