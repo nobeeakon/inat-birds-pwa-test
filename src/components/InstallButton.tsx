@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@mui/material";
+import InstallMobileIcon from "@mui/icons-material/InstallMobile";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -72,6 +73,7 @@ const InstallButton = () => {
       variant="contained"
       color="primary"
       onClick={handleInstallClick}
+      startIcon={<InstallMobileIcon />}
       sx={{
         position: "fixed",
         // Sits above the nav bar toggle, which occupies the same corner
@@ -81,7 +83,7 @@ const InstallButton = () => {
         boxShadow: 3,
       }}
     >
-      ⬇️ {t("installApp")}
+      {t("installApp")}
     </Button>
   );
 };

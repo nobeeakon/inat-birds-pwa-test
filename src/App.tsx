@@ -7,6 +7,7 @@ import LocationsContextProvider from "./LocationsContext";
 import { ThemeProvider } from "@mui/material/styles";
 
 import InstallButton from "@/components/InstallButton";
+import UpdatePrompt from "@/components/UpdatePrompt";
 import Router from "./Router";
 
 import "./App.css";
@@ -23,6 +24,7 @@ const AppWrapper = () => {
               <BrowserRouter basename={BASE_URL}>
                 <Router />
                 <InstallButton />
+                <UpdatePrompt />
               </BrowserRouter>
             </SpeciesInfoContextProvider>
           </CategoriesContextProvider>

@@ -20,7 +20,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt" instead of "autoUpdate": the new worker waits until the user
+      // accepts the reload offered by src/components/UpdatePrompt.tsx, so an
+      // update never interrupts a game in progress.
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
         name: "iNat memorama",
@@ -45,6 +48,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // Drop precaches from previous builds so old bundles are not kept around
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern:
