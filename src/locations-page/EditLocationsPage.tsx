@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -24,20 +24,26 @@ import Map from "@/components/Map";
 
 const EditLocation = ({
   location,
+  isNewLocation,
   updateLocation,
   onDone,
-  onDeleteLocation,
+  onDiscardLocation,
 }: {
   location: LocationInformation;
+  isNewLocation: boolean;
   updateLocation: (location: LocationInformation) => void;
   onDone: () => void;
-  onDeleteLocation: () => void;
+  onDiscardLocation: () => void;
 }) => {
   const { t } = useTranslation();
   const [isMapClickEnabled, setIsMapClickEnabled] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (location.name.trim() === "") {
+      return;
+    }
 
     onDone();
   };
@@ -65,7 +71,7 @@ const EditLocation = ({
   return (
     <Box>
       <Typography variant="h6" sx={{ mb: 2 }}>
-        {t("selectLocation")}
+        {isNewLocation ? t("addLocation") : t("selectLocation")}
       </Typography>
       <Stack component="form" onSubmit={handleSubmit} spacing={2}>
         <TextField
@@ -94,12 +100,16 @@ const EditLocation = ({
           spacing={4}
           sx={{ display: "flex", justifyContent: "center" }}
         >
-          <Button onClick={onDeleteLocation} color="error" sx={{ mt: 2 }}>
-            {t("delete")}
+          <Button
+            onClick={onDiscardLocation}
+            color={isNewLocation ? "primary" : "error"}
+            sx={{ mt: 2 }}
+          >
+            {isNewLocation ? t("cancel") : t("delete")}
           </Button>
 
           <Button type="submit" variant="contained">
-            {t("done")}
+            {isNewLocation ? t("save") : t("done")}
           </Button>
         </Stack>
       </Stack>
@@ -150,12 +160,20 @@ const DEFAULT_NEW_LOCATION: LocationInformation = {
 
 const LocationsPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { locationsInfo, setLocationsInfo } = useLocationsContext();
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null
   );
-  const selectedLocation =
+  // A location being created lives here, out of the saved list, until the user submits the
+  // form. Otherwise abandoning the form leaves an unfilled default location behind.
+  const [newLocationDraft, setNewLocationDraft] =
+    useState<LocationInformation | null>(null);
+
+  const savedSelectedLocation =
     locationsInfo.find((loc) => loc.id === selectedLocationId) ?? null;
+  const editedLocation = newLocationDraft ?? savedSelectedLocation;
 
   const onDeleteLocation = (locationId: string) => {
     const newLocations = locationsInfo.filter((loc) => loc.id !== locationId);
@@ -164,30 +182,102 @@ const LocationsPage = () => {
   };
 
   const onAddNewLocation = () => {
-    const newLocation: LocationInformation = {
+    setSelectedLocationId(null);
+    setNewLocationDraft({
       ...DEFAULT_NEW_LOCATION,
       id: `loc-${Date.now()}`, // Simple unique ID
-      name: t("locationNumber", { number: locationsInfo.length + 1 }),
-    };
-    setLocationsInfo([...locationsInfo, newLocation]);
-    setSelectedLocationId(newLocation.id);
+    });
+  };
+
+  const onUpdateEditedLocation = (updatedLocation: LocationInformation) => {
+    if (newLocationDraft) {
+      setNewLocationDraft(updatedLocation);
+      return;
+    }
+
+    const newLocations = locationsInfo.map((loc) =>
+      loc.id === updatedLocation.id ? updatedLocation : loc
+    );
+    setLocationsInfo(newLocations);
+  };
+
+  /**
+   * The taxa and pool params have to be carried over, not just the location: the hooks
+   * that keep them in the URL answer a missing param with a replace navigation, and that
+   * one resolves against this page, undoing the move to the observations.
+   */
+  const observationsPathFor = (locationId: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("location", locationId);
+    return `/observations?${nextParams.toString()}`;
+  };
+
+  // Straight to the observations of the location that was just edited, rather than back
+  // to the table: editing it is how the user says which one they are interested in
+  const onDoneEditing = () => {
+    if (newLocationDraft) {
+      setLocationsInfo([...locationsInfo, newLocationDraft]);
+      setNewLocationDraft(null);
+      navigate(observationsPathFor(newLocationDraft.id));
+      return;
+    }
+
+    setSelectedLocationId(null);
+
+    if (savedSelectedLocation) {
+      navigate(observationsPathFor(savedSelectedLocation.id));
+    }
+  };
+
+  const onDiscardEditedLocation = () => {
+    if (newLocationDraft) {
+      setNewLocationDraft(null);
+      return;
+    }
+
+    if (savedSelectedLocation) {
+      onDeleteLocation(savedSelectedLocation.id);
+    }
   };
 
   return (
     <Box>
       <Box sx={{ mt: 2, px: 4 }}>
-        {selectedLocation ? (
+        {editedLocation ? (
           <EditLocation
-            location={selectedLocation}
-            onDeleteLocation={() => onDeleteLocation(selectedLocation.id)}
-            updateLocation={(updatedLocation) => {
-              const newLocations = locationsInfo.map((loc) =>
-                loc.id === updatedLocation.id ? updatedLocation : loc
-              );
-              setLocationsInfo(newLocations);
-            }}
-            onDone={() => setSelectedLocationId(null)}
+            location={editedLocation}
+            isNewLocation={newLocationDraft !== null}
+            onDiscardLocation={onDiscardEditedLocation}
+            updateLocation={onUpdateEditedLocation}
+            onDone={onDoneEditing}
           />
+        ) : locationsInfo.length === 0 ? (
+          <Stack spacing={3} sx={{ alignItems: "center", py: 8 }}>
+            <Typography variant="h6" sx={{ textAlign: "center" }}>
+              {t("noLocationsYet")}
+            </Typography>
+            <Button
+              onClick={onAddNewLocation}
+              variant="contained"
+              size="large"
+              startIcon={<AddIcon />}
+            >
+              {t("addLocation")}
+            </Button>
+            {/* Nested so the two paragraphs read as one block instead of being pushed
+                apart by the spacing of the surrounding stack */}
+            <Stack
+              spacing={1}
+              sx={{ alignItems: "center", textAlign: "center", maxWidth: 400 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {t("aboutDescription")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t("aboutDataSource")}
+              </Typography>
+            </Stack>
+          </Stack>
         ) : (
           <>
             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
@@ -212,7 +302,7 @@ const LocationsPage = () => {
                   {locationsInfo.map((locationItem, index) => (
                     <TableRow key={locationItem.id}>
                       <TableCell>
-                        <Link to={`/observations?location=${locationItem.id}`}>
+                        <Link to={observationsPathFor(locationItem.id)}>
                           {locationItem.name}
                         </Link>
                       </TableCell>

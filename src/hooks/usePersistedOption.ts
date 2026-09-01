@@ -53,11 +53,18 @@ export const usePersistedOption = <T extends string>({
     [searchParamName, setSearchParams]
   );
 
+  // Checked against the live URL rather than urlValue: a navigation made in an event
+  // handler reaches the URL immediately, while a render in flight can still show the
+  // params from before it, and writing then sends the param to the path of that render,
+  // undoing the navigation.
   useEffect(() => {
-    if (urlValue !== currentValue) {
-      writeToUrl(currentValue, { replace: true });
-    }
-  }, [currentValue, urlValue, writeToUrl]);
+    const liveValue = new URLSearchParams(window.location.search).get(
+      searchParamName
+    );
+    if (liveValue === currentValue) return;
+
+    writeToUrl(currentValue, { replace: true });
+  }, [currentValue, urlValue, searchParamName, writeToUrl]);
 
   useEffect(() => {
     storage.set(storageKey, currentValue);

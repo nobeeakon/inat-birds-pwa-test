@@ -1,4 +1,5 @@
 export const LOCAL_STORAGE_KEY = {
+  language: "language",
   currentLocationId: "current_location_id",
   currentTaxa: "current_taxa",
   currentSpeciesPool: "current_species_pool",

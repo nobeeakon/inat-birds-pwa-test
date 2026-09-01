@@ -1,5 +1,6 @@
 import { BrowserRouter } from "react-router-dom";
 import theme from "./theme";
+import LanguageContextProvider from "./LanguageContext";
 import SpeciesInfoContextProvider from "./SpeciesInfoContext";
 import CategoriesContextProvider from "./CategoriesContext";
 import LocationsContextProvider from "./LocationsContext";
@@ -15,16 +16,18 @@ const BASE_URL = import.meta.env.BASE_URL;
 const AppWrapper = () => {
   return (
     <ThemeProvider theme={theme}>
-      <LocationsContextProvider>
-        <CategoriesContextProvider>
-          <SpeciesInfoContextProvider>
-            <BrowserRouter basename={BASE_URL}>
-              <Router />
-              <InstallButton />
-            </BrowserRouter>
-          </SpeciesInfoContextProvider>
-        </CategoriesContextProvider>
-      </LocationsContextProvider>
+      <LanguageContextProvider>
+        <LocationsContextProvider>
+          <CategoriesContextProvider>
+            <SpeciesInfoContextProvider>
+              <BrowserRouter basename={BASE_URL}>
+                <Router />
+                <InstallButton />
+              </BrowserRouter>
+            </SpeciesInfoContextProvider>
+          </CategoriesContextProvider>
+        </LocationsContextProvider>
+      </LanguageContextProvider>
     </ThemeProvider>
   );
 };

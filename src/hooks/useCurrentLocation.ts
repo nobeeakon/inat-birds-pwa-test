@@ -47,17 +47,27 @@ export const useCurrentLocation = (): UseCurrentLocationReturn => {
   // taxon). Read from the live URL instead of the params of the last render: the
   // other persisted options sync in the same effect flush, and each would otherwise
   // overwrite what the previous ones had just written.
+  //
+  // The live URL also decides whether to write at all. A navigation made in an event
+  // handler reaches the URL immediately, while a render in flight can still show the
+  // params from before it; writing then sends the param to the path of that render,
+  // undoing the navigation.
   useEffect(() => {
-    if (currentLocationId && urlLocationId !== currentLocationId) {
-      setSearchParams(
-        () => {
-          const nextParams = new URLSearchParams(window.location.search);
-          nextParams.set("location", currentLocationId);
-          return nextParams;
-        },
-        { replace: true }
-      );
-    }
+    if (!currentLocationId) return;
+
+    const liveLocationId = new URLSearchParams(window.location.search).get(
+      "location"
+    );
+    if (liveLocationId === currentLocationId) return;
+
+    setSearchParams(
+      () => {
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set("location", currentLocationId);
+        return nextParams;
+      },
+      { replace: true }
+    );
   }, [currentLocationId, urlLocationId, setSearchParams]);
 
   // Sync localStorage when current location changes

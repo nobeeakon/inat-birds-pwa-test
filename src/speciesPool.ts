@@ -29,7 +29,7 @@ export type SpeciesPool = PresetSpeciesPool | CategorySpeciesPool;
 
 export const CATEGORY_POOL_PREFIX = "category:";
 
-export const DEFAULT_SPECIES_POOL: SpeciesPool = "all";
+export const DEFAULT_SPECIES_POOL: SpeciesPool = "top50";
 
 /** Used when the selected category pool no longer has species to draw from. */
 export const FALLBACK_SPECIES_POOL: SpeciesPool = "top50";

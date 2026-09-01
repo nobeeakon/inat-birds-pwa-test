@@ -18,11 +18,16 @@ import {
   Link as MuiLink,
 } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
+import EditIcon from "@mui/icons-material/Edit";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import MenuIcon from "@mui/icons-material/Menu";
+import TranslateIcon from "@mui/icons-material/Translate";
 
+import { useLanguageContext } from "@/LanguageContext";
 import { useLocationsContext } from "@/LocationsContext";
+import AboutDialog from "@/components/AboutDialog";
 import TaxaSelector from "@/components/TaxaSelector";
 import { useStorageState } from "@/storage/storage";
 import type { Taxa } from "@/taxa";
@@ -67,7 +72,9 @@ const AppHeader = ({
     false
   );
   const [showConfig, setShowConfig] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const locations = useLocationsContext().locationsInfo;
+  const { openLanguageSelector } = useLanguageContext();
 
   const isNavBarShown = !isMobile || isNavBarVisible;
 
@@ -121,11 +128,27 @@ const AppHeader = ({
           </AppBar>
           {showConfig && (
             <Box sx={{ mt: 2 }}>
-              <Box>
-                <Button component={Link} to="/locations">
+              <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button
+                  component={Link}
+                  to="/locations"
+                  startIcon={<EditIcon />}
+                >
                   {t("editLocations")}
                 </Button>
-              </Box>
+                <Button
+                  onClick={openLanguageSelector}
+                  startIcon={<TranslateIcon />}
+                >
+                  {t("changeLanguage")}
+                </Button>
+                <Button
+                  onClick={() => setShowAbout(true)}
+                  startIcon={<HelpOutlineIcon />}
+                >
+                  {t("about")}
+                </Button>
+              </Stack>
               <Box
                 sx={{
                   mt: 1,
@@ -169,6 +192,10 @@ const AppHeader = ({
           )}
         </Box>
       </Collapse>
+
+      {/* Outside the Collapse, which unmounts its children: hiding the bar on a phone
+          would otherwise close the dialog opened from it */}
+      <AboutDialog isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
       {isMobile && !isNavBarShown && (
         <Fab
