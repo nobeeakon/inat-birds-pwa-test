@@ -1,3 +1,5 @@
+import { getInaturalistSite } from "@/inaturalistSite";
+
 export const fetchData = <T>(URL: string): Promise<T> =>
   fetch(URL, {
     credentials: "omit",
@@ -10,7 +12,7 @@ export const fetchData = <T>(URL: string): Promise<T> =>
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Site": "same-site",
     },
-    referrer: "https://mexico.inaturalist.org/",
+    referrer: `${getInaturalistSite().siteUrl}/`,
     method: "GET",
     mode: "cors",
   }).then((response) => response.json());

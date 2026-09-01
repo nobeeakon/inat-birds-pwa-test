@@ -23,20 +23,21 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
-        name: "Birds iNat App",
-        short_name: "Birds iNat",
-        description: "Your birds iNat application",
+        name: "iNat memorama",
+        short_name: "iNat memorama",
+        description:
+          "memorama for species. Data from iNaturalist, the app is for test purpose only",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
         icons: [
           {
-            src: "android-launchericon-48-48.png",
+            src: "bird_48_48.png",
             sizes: "48x48",
             type: "image/png",
           },
           {
-            src: "android-launchericon-192-192.png",
+            src: "bird_192_192.png",
             sizes: "192x192",
             type: "image/png",
           },

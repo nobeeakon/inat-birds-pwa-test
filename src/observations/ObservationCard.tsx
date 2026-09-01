@@ -61,27 +61,27 @@ const ObservationCard = ({
           color="success"
           onClick={() => onNext("identified")}
         >
-          Fácil
+          {t("easy")}
         </Button>
         <Button
           fullWidth
           variant="contained"
           onClick={() => onNext("sortOfIdentified")}
         >
-          Bien
+          {t("okay")}
         </Button>
         <Button
           fullWidth
           variant="outlined"
           onClick={() => onNext("unidentified")}
         >
-          Difícil
+          {t("hard")}
         </Button>
       </CardActions>
 
       <Box sx={{ textAlign: "center", mx: 1 }}>
         <Button onClick={() => setShowTaxa(true)} color="info" fullWidth>
-          Show
+          {t("show")}
         </Button>
       </Box>
 

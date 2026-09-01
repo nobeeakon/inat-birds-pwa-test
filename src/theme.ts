@@ -12,6 +12,9 @@ const theme = createTheme({
     success: {
       main: "#4caf50",
       light: "#90ee90", // lightgreen
+      // MUI's contrast calculation picks dark text on this green; white matches
+      // the other contained buttons and reads better against the fill
+      contrastText: "#fff",
     },
     info: {
       main: "#2196f3",

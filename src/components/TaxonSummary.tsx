@@ -1,5 +1,7 @@
 import { Box, Typography } from "@mui/material";
 
+import { getInaturalistSite } from "@/inaturalistSite";
+
 /**
  * The heading shared by the observation and species cards: the scientific name on
  * its own line, with everything else about the taxon on a second, quieter line.
@@ -37,7 +39,7 @@ const TaxonSummary = ({
         <strong>
           {index != null && `${index}. `}
           <a
-            href={`https://mexico.inaturalist.org/taxa/${taxonId}`}
+            href={`${getInaturalistSite().siteUrl}/taxa/${taxonId}`}
             target="blank"
           >
             {scientificName}
