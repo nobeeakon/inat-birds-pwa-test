@@ -153,8 +153,8 @@ const EditLocation = ({
 const DEFAULT_NEW_LOCATION: LocationInformation = {
   id: "",
   name: "",
-  lat: 20,
-  lng: -99,
+  lat: 20.541081392376856,
+  lng: -100.37336899427861,
   radius: 5,
 };
 
