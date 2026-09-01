@@ -126,7 +126,7 @@ const ObservationsPage = ({
         )}
         {!!currentObservation && (
           <ObservationCard
-            key={`card-observation-${currentIndex}`}
+            key={`card-observation-${currentObservation.uuid}`}
             data={currentObservation}
             onExcludeTaxa={onExcludeTaxa}
             onNext={(status: ObservationStatus) =>

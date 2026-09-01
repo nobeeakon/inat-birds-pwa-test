@@ -32,24 +32,34 @@ const ObservationCard = ({
   onExcludeTaxa: () => void;
 }) => {
   const [showTaxa, setShowTaxa] = useState(false);
-  const [photoIdx, setPhotoIdx] = useState(0);
+  // The observation this component renders can change under a stable key, for
+  // instance when excluding a species reshuffles the list. Tying the index to
+  // the observation keeps it from pointing past the photos of the new one.
+  const [photoSelection, setPhotoSelection] = useState({
+    observationUuid: data.uuid,
+    index: 0,
+  });
   const { t } = useTranslation();
 
+  const photos = data.photos ?? [];
+  const photoIdx =
+    photoSelection.observationUuid === data.uuid ? photoSelection.index : 0;
+
   const imgUrl =
-    data.photos && data.photos.length > 0
-      ? data.photos[photoIdx].url.replace("square", "medium")
-      : null;
+    photos.length > 0 ? photos[photoIdx].url.replace("square", "medium") : null;
 
   const onNextPhoto = () => {
-    if (data.photos && data.photos.length > 0) {
-      setPhotoIdx((prev) => (prev + 1 >= data.photos.length ? prev : prev + 1));
-    }
+    setPhotoSelection({
+      observationUuid: data.uuid,
+      index: photoIdx + 1 >= photos.length ? photoIdx : photoIdx + 1,
+    });
   };
 
   const onPrevPhoto = () => {
-    if (data.photos && data.photos.length > 0) {
-      setPhotoIdx((prev) => (prev - 1 < 0 ? prev : prev - 1));
-    }
+    setPhotoSelection({
+      observationUuid: data.uuid,
+      index: photoIdx - 1 < 0 ? photoIdx : photoIdx - 1,
+    });
   };
 
   return (
@@ -129,7 +139,7 @@ const ObservationCard = ({
         </Box>
       )}
 
-      {data.photos.length > 1 && (
+      {photos.length > 1 && (
         <Box
           sx={{
             display: "flex",
@@ -144,7 +154,7 @@ const ObservationCard = ({
           >
             {t("Previous")}
           </Button>
-          {photoIdx < data.photos.length - 1 && (
+          {photoIdx < photos.length - 1 && (
             <Button onClick={onNextPhoto}>{t("Next")}</Button>
           )}
         </Box>
