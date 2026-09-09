@@ -40,6 +40,8 @@ const Header = ({
       updateTaxa={updateTaxa}
       extraControls={
         <SpeciesPoolSelector
+          currentLocationId={currentLocationId}
+          currentTaxa={currentTaxa}
           currentSpeciesPool={currentSpeciesPool}
           updateSpeciesPool={updateSpeciesPool}
         />

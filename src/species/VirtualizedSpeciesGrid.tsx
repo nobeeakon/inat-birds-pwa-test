@@ -4,6 +4,7 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 import SpecieCard from "@/species/SpecieCard";
 import type { SpeciesData } from "@/species/useFetchSpecies";
+import type { Taxa } from "@/taxa";
 
 /**
  * The species list, rendering only the rows near the viewport.
@@ -53,10 +54,15 @@ const chunkIntoRows = (species: SpeciesData[], columnCount: number) => {
 const VirtualizedSpeciesGrid = ({
   species,
   showIndex,
+  currentLocationId,
+  currentTaxa,
 }: {
   species: SpeciesData[];
   /** Numbers each card by its position, only meaningful on the unfiltered list. */
   showIndex: boolean;
+  /** The scope an exclusion made from a card applies to. */
+  currentLocationId: string;
+  currentTaxa: Taxa;
 }) => {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [listMetrics, setListMetrics] = useState({ offsetTop: 0, width: 0 });
@@ -152,6 +158,8 @@ const VirtualizedSpeciesGrid = ({
               >
                 <SpecieCard
                   data={item}
+                  currentLocationId={currentLocationId}
+                  currentTaxa={currentTaxa}
                   idx={
                     showIndex
                       ? virtualRow.index * columnCount + columnIndex + 1

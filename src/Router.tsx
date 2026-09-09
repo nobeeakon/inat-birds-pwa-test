@@ -1,14 +1,9 @@
-import {
-  Routes,
-  Route,
-  Navigate,
-  useLocation as useRouterLocation,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import ObservationsPage from "@/observations/ObservationsPage";
 import SpeciesPage from "@/species/SpeciesPage";
 import LocationsPage from "./locations-page/EditLocationsPage";
-import BirdDataContextProvider from "@/BirdDataContext";
+import INaturalistDataContextProvider from "@/INaturalistDataContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useCurrentTaxa } from "@/hooks/useCurrentTaxa";
 import { useCurrentSpeciesPool } from "@/hooks/useCurrentSpeciesPool";
@@ -16,7 +11,6 @@ import { useCurrentSpeciesPool } from "@/hooks/useCurrentSpeciesPool";
 import "./App.css";
 
 const Router = () => {
-  const { search } = useRouterLocation();
   const { currentLocation, setCurrentLocationId } = useCurrentLocation();
   const { currentTaxa, setCurrentTaxa } = useCurrentTaxa();
   const { currentSpeciesPool, setCurrentSpeciesPool } = useCurrentSpeciesPool();
@@ -27,10 +21,7 @@ const Router = () => {
       <Routes>
         <Route path="/" element={<LocationsPage />} />
         <Route path="/locations" element={<LocationsPage />} />
-        <Route
-          path="*"
-          element={<Navigate to={`/locations${search}`} replace />}
-        />
+        <Route path="*" element={<Navigate to="/locations" replace />} />
       </Routes>
     );
   }
@@ -47,17 +38,15 @@ const Router = () => {
   );
 
   return (
-    <BirdDataContextProvider
+    <INaturalistDataContextProvider
       currentLocation={currentLocation}
       currentTaxa={currentTaxa}
       currentSpeciesPool={currentSpeciesPool}
     >
       <Routes>
         <Route path="/locations" element={<LocationsPage />} />
-        {/* The landing path renders the observations page rather than redirecting
-            to it: a redirect only takes effect in an effect, which the hooks above
-            undo by writing their params against the pre-redirect path, leaving the
-            app on a path that matches nothing and renders blank */}
+        {/* Rendered rather than redirected to, so the landing path costs no extra
+            navigation */}
         <Route path="/" element={observationsPage} />
         <Route path="/observations" element={observationsPage} />
         <Route
@@ -71,14 +60,9 @@ const Router = () => {
             />
           }
         />
-        {/* Params are carried over so the redirect does not drop the current
-            location, taxa and pool */}
-        <Route
-          path="*"
-          element={<Navigate to={`/observations${search}`} replace />}
-        />
+        <Route path="*" element={<Navigate to="/observations" replace />} />
       </Routes>
-    </BirdDataContextProvider>
+    </INaturalistDataContextProvider>
   );
 };
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -19,6 +19,7 @@ import AddIcon from "@mui/icons-material/Add";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import { useLocationsContext } from "@/LocationsContext";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
 
@@ -126,6 +127,7 @@ const EditLocation = ({
           </Button>
           <Button
             type="button"
+            variant={isMapClickEnabled ? "contained" : "outlined"}
             onClick={handleGetCurrentLocation}
             startIcon={<MyLocationIcon />}
           >
@@ -161,8 +163,8 @@ const DEFAULT_NEW_LOCATION: LocationInformation = {
 const LocationsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { locationsInfo, setLocationsInfo } = useLocationsContext();
+  const { setCurrentLocationId } = useCurrentLocation();
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
     null
   );
@@ -201,15 +203,9 @@ const LocationsPage = () => {
     setLocationsInfo(newLocations);
   };
 
-  /**
-   * The taxa and pool params have to be carried over, not just the location: the hooks
-   * that keep them in the URL answer a missing param with a replace navigation, and that
-   * one resolves against this page, undoing the move to the observations.
-   */
-  const observationsPathFor = (locationId: string) => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("location", locationId);
-    return `/observations?${nextParams.toString()}`;
+  const goToObservationsOf = (locationId: string) => {
+    setCurrentLocationId(locationId);
+    navigate("/observations");
   };
 
   // Straight to the observations of the location that was just edited, rather than back
@@ -218,14 +214,14 @@ const LocationsPage = () => {
     if (newLocationDraft) {
       setLocationsInfo([...locationsInfo, newLocationDraft]);
       setNewLocationDraft(null);
-      navigate(observationsPathFor(newLocationDraft.id));
+      goToObservationsOf(newLocationDraft.id);
       return;
     }
 
     setSelectedLocationId(null);
 
     if (savedSelectedLocation) {
-      navigate(observationsPathFor(savedSelectedLocation.id));
+      goToObservationsOf(savedSelectedLocation.id);
     }
   };
 
@@ -302,7 +298,10 @@ const LocationsPage = () => {
                   {locationsInfo.map((locationItem, index) => (
                     <TableRow key={locationItem.id}>
                       <TableCell>
-                        <Link to={observationsPathFor(locationItem.id)}>
+                        <Link
+                          to="/observations"
+                          onClick={() => setCurrentLocationId(locationItem.id)}
+                        >
                           {locationItem.name}
                         </Link>
                       </TableCell>

@@ -1,22 +1,65 @@
 import { memo } from "react";
-import { Card, CardMedia, CardContent } from "@mui/material";
+import { Box, Button, Card, CardMedia, CardContent } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import TaxonSummary from "@/components/TaxonSummary";
 import SpeciesCategories from "@/components/SpeciesCategories";
 import SimilarSpecies from "@/species/SimilarSpecies";
+import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
+import {
+  addExclusionScope,
+  isSpeciesExcluded,
+  removeExclusionScope,
+} from "@/exclusions";
 import type { SpeciesData } from "@/species/useFetchSpecies";
+import type { Taxa } from "@/taxa";
 import { getFamilyName } from "@/taxonomy";
 import { getCachedPhotoUrl } from "@/utils";
 
-const SpecieCard = ({ data, idx }: { data: SpeciesData; idx?: number }) => {
+const SpecieCard = ({
+  data,
+  idx,
+  currentLocationId,
+  currentTaxa,
+}: {
+  data: SpeciesData;
+  idx?: number;
+  currentLocationId: string;
+  currentTaxa: Taxa;
+}) => {
   const { t } = useTranslation();
+  const { getSpeciesInfo, updateSpeciesInfo } = useSpeciesInfoContext();
 
   const imageUrl = getCachedPhotoUrl(data.taxon.default_photo?.square_url);
 
   const familyName = getFamilyName(data.taxon.ancestors);
 
+  const stringTaxonId = data.taxon.id.toString();
+  const speciesInfo = getSpeciesInfo(stringTaxonId);
+  const isExcluded = isSpeciesExcluded(
+    speciesInfo,
+    currentLocationId,
+    currentTaxa
+  );
+
+  // Excluding here hides the species from the observations of this location and taxa
+  // only; the card stays on the list so the exclusion can be undone from the same place
+  const toggleExclusion = () => {
+    const updatedInfo = {
+      ...(speciesInfo ?? {}),
+      taxonId: stringTaxonId,
+      speciesName: speciesInfo?.speciesName ?? data.taxon.name,
+    };
+
+    updateSpeciesInfo(
+      stringTaxonId,
+      isExcluded
+        ? removeExclusionScope(updatedInfo, currentLocationId, currentTaxa)
+        : addExclusionScope(updatedInfo, currentLocationId, currentTaxa)
+    );
+  };
+
   return (
-    <Card sx={{ maxWidth: 400, width: "100%" }}>
+    <Card sx={{ maxWidth: 400, width: "100%", opacity: isExcluded ? 0.6 : 1 }}>
       <CardMedia
         component="img"
         image={imageUrl}
@@ -48,6 +91,17 @@ const SpecieCard = ({ data, idx }: { data: SpeciesData; idx?: number }) => {
         />
 
         <SimilarSpecies species={data} />
+
+        <Box sx={{ mt: 0.5 }}>
+          <Button
+            size="small"
+            color={isExcluded ? "primary" : "inherit"}
+            variant={isExcluded ? "outlined" : "text"}
+            onClick={toggleExclusion}
+          >
+            {isExcluded ? t("excludedHere") : t("exclude")}
+          </Button>
+        </Box>
       </CardContent>
     </Card>
   );

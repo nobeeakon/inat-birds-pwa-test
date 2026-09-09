@@ -11,7 +11,8 @@ export type Category = {
 export type SpecieInfo = {
   taxonId: string;
   speciesName?: string;
-  exclude?: boolean;
+  /** Location and taxa combinations the species is hidden from, see @/exclusions */
+  excludedFromScopes?: string[];
   personalNotes?: string[];
   categoryIds?: string[];
   preferredSpeciesImage?: string;
@@ -68,7 +69,7 @@ let dbInstance: IDBPDatabase<BirdsDB> | null = null;
 
 async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
   if (!dbInstance) {
-    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 3, {
+    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 4, {
       async upgrade(db, oldVersion, _newVersion, transaction) {
         // Version 1: Create initial speciesNotes store
         if (oldVersion < 1) {
@@ -120,6 +121,25 @@ async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
             db.createObjectStore("speciesLists", {
               keyPath: "id",
             });
+          }
+        }
+
+        // Version 4: Exclusions became per location and taxa. The old global flag
+        // is dropped rather than mapped onto a location, as there is no way to tell
+        // which one it was made from.
+        if (oldVersion < 4) {
+          const speciesInfoStore = transaction.objectStore("speciesInfo");
+
+          let cursor = await speciesInfoStore.openCursor();
+          while (cursor) {
+            if ("exclude" in cursor.value.data) {
+              const data: SpecieInfo & { exclude?: unknown } = {
+                ...cursor.value.data,
+              };
+              delete data.exclude;
+              await cursor.update({ ...cursor.value, data });
+            }
+            cursor = await cursor.continue();
           }
         }
       },

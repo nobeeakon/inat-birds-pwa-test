@@ -1,82 +1,35 @@
-import { useCallback, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useCallback, useState } from "react";
 import { storage } from "@/storage/storage";
 
 type UsePersistedOptionArgs<T extends string> = {
-  searchParamName: string;
   storageKey: string;
   defaultValue: T;
   isValidValue: (value: unknown) => value is T;
 };
 
 /**
- * Keeps a single string setting in sync across the URL and localStorage.
+ * Keeps a single string setting in localStorage.
  *
- * Priority when reading: valid URL param > valid localStorage > default. Values that
- * fail isValidValue are ignored, so a stale stored value or a hand-edited link falls
- * back to the default instead of reaching the API.
+ * The stored value is validated on read, so one left behind by an older version of the
+ * app falls back to the default instead of reaching the API.
  */
 export const usePersistedOption = <T extends string>({
-  searchParamName,
   storageKey,
   defaultValue,
   isValidValue,
 }: UsePersistedOptionArgs<T>): [T, (value: T) => void] => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlValue = searchParams.get(searchParamName);
-
-  const currentValue = useMemo(() => {
-    if (isValidValue(urlValue)) {
-      return urlValue;
-    }
-
+  const [currentValue, setCurrentValue] = useState<T>(() => {
     const storedValue = storage.get<string>(storageKey);
-    if (isValidValue(storedValue)) {
-      return storedValue;
-    }
-
-    return defaultValue;
-  }, [urlValue, storageKey, defaultValue, isValidValue]);
-
-  // Merge into the existing params rather than replacing them, so the other
-  // persisted options in the URL survive. Read from the live URL instead of the
-  // params of the last render: the options sync in the same effect flush, and each
-  // would otherwise overwrite what the previous ones had just written.
-  const writeToUrl = useCallback(
-    (value: T, options?: { replace?: boolean }) => {
-      setSearchParams(() => {
-        const nextParams = new URLSearchParams(window.location.search);
-        nextParams.set(searchParamName, value);
-        return nextParams;
-      }, options);
-    },
-    [searchParamName, setSearchParams]
-  );
-
-  // Checked against the live URL rather than urlValue: a navigation made in an event
-  // handler reaches the URL immediately, while a render in flight can still show the
-  // params from before it, and writing then sends the param to the path of that render,
-  // undoing the navigation.
-  useEffect(() => {
-    const liveValue = new URLSearchParams(window.location.search).get(
-      searchParamName
-    );
-    if (liveValue === currentValue) return;
-
-    writeToUrl(currentValue, { replace: true });
-  }, [currentValue, urlValue, searchParamName, writeToUrl]);
-
-  useEffect(() => {
-    storage.set(storageKey, currentValue);
-  }, [currentValue, storageKey]);
+    return isValidValue(storedValue) ? storedValue : defaultValue;
+  });
 
   // Stable so callers can use it as an effect dependency
   const setValue = useCallback(
     (value: T) => {
       storage.set(storageKey, value);
-      writeToUrl(value);
+      setCurrentValue(value);
     },
-    [storageKey, writeToUrl]
+    [storageKey]
   );
 
   return [currentValue, setValue];

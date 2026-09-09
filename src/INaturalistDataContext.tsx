@@ -21,6 +21,7 @@ import type { LocationInformation } from "@/types";
 import type { Taxa } from "@/taxa";
 import { getSpeciesPoolCategoryId } from "@/speciesPool";
 import type { SpeciesPool } from "@/speciesPool";
+import { isSpeciesExcluded } from "@/exclusions";
 
 type BrowsingState = {
   key: string; // Identifies the observation set the position belongs to
@@ -73,18 +74,20 @@ type SpeciesQueryData = {
   isTruncated: boolean; // The location has more species than the fetch limit
 };
 
-type BirdDataContextType = {
+type INaturalistDataContextType = {
   observationsData: ObservationsData;
   speciesData: SpeciesQueryData;
 };
 
-const BirdDataContext = createContext<BirdDataContextType | null>(null);
+const INaturalistDataContext = createContext<INaturalistDataContextType | null>(
+  null
+);
 
-const useBirdDataContext = (): BirdDataContextType => {
-  const context = useContext(BirdDataContext);
+const useINaturalistDataContext = (): INaturalistDataContextType => {
+  const context = useContext(INaturalistDataContext);
   if (!context) {
     throw new Error(
-      "useBirdDataContext must be used within a BirdDataContextProvider"
+      "useINaturalistDataContext must be used within an INaturalistDataContextProvider"
     );
   }
   return context;
@@ -92,11 +95,11 @@ const useBirdDataContext = (): BirdDataContextType => {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useObservationsData = (): ObservationsData =>
-  useBirdDataContext().observationsData;
+  useINaturalistDataContext().observationsData;
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useSpeciesData = (): SpeciesQueryData =>
-  useBirdDataContext().speciesData;
+  useINaturalistDataContext().speciesData;
 
 /**
  * Holds the data both the observations and the species pages render.
@@ -106,7 +109,7 @@ export const useSpeciesData = (): SpeciesQueryData =>
  * pages because the two iNaturalist endpoints share a rate limit and need to be
  * sequenced against each other.
  */
-const BirdDataContextProvider = ({
+const INaturalistDataContextProvider = ({
   currentLocation,
   currentTaxa,
   currentSpeciesPool,
@@ -129,7 +132,9 @@ const BirdDataContextProvider = ({
 
     return Array.from(speciesInfoState.data.values())
       .filter(
-        (info) => info.categoryIds?.includes(poolCategoryId) && !info.exclude
+        (info) =>
+          info.categoryIds?.includes(poolCategoryId) &&
+          !isSpeciesExcluded(info, currentLocation.id, currentTaxa)
       )
       .map((info) => info.taxonId)
       .join(",");
@@ -207,7 +212,12 @@ const BirdDataContextProvider = ({
 
   const observations =
     observationsQuery.data?.filter(
-      (item) => !getSpeciesInfo(item.taxon.id.toString())?.exclude
+      (item) =>
+        !isSpeciesExcluded(
+          getSpeciesInfo(item.taxon.id.toString()),
+          currentLocation.id,
+          currentTaxa
+        )
     ) ?? [];
 
   const currentIndex =
@@ -259,7 +269,7 @@ const BirdDataContextProvider = ({
     });
   };
 
-  const value: BirdDataContextType = {
+  const value: INaturalistDataContextType = {
     observationsData: {
       loading: observationsQuery.loading,
       error: !!observationsQuery.error,
@@ -283,10 +293,10 @@ const BirdDataContextProvider = ({
   };
 
   return (
-    <BirdDataContext.Provider value={value}>
+    <INaturalistDataContext.Provider value={value}>
       {children}
-    </BirdDataContext.Provider>
+    </INaturalistDataContext.Provider>
   );
 };
 
-export default BirdDataContextProvider;
+export default INaturalistDataContextProvider;

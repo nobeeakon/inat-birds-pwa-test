@@ -1,7 +1,4 @@
-import { useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { storage } from "@/storage/storage";
-import { LOCAL_STORAGE_KEY } from "@/constants";
+import { useMemo } from "react";
 import type { LocationInformation } from "@/types";
 import { useLocationsContext } from "@/LocationsContext";
 
@@ -12,81 +9,30 @@ type UseCurrentLocationReturn = {
 };
 
 /**
- * Hook to manage current location ID with URL param and localStorage sync.
- * Validates that the location ID exists in the locations array.
+ * The location the app is currently showing, kept in localStorage by LocationsContext.
+ *
+ * The stored id is resolved against the saved locations on every read: deleting the
+ * location that was selected leaves an id that names nothing, and the first saved
+ * location stands in until another one is picked.
  */
 export const useCurrentLocation = (): UseCurrentLocationReturn => {
-  const { locationsInfo: locations } = useLocationsContext();
+  const {
+    locationsInfo: locations,
+    currentLocationId: storedLocationId,
+    setCurrentLocationId,
+  } = useLocationsContext();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlLocationId = searchParams.get("location");
-
-  // Derive the current location ID from URL param, localStorage, or locations array
   const currentLocationId = useMemo(() => {
     if (locations.length === 0) {
       return null;
     }
 
-    const locationExists = (id: string | null) =>
-      !!id && locations.some((loc) => loc.id === id);
-
-    // Priority: valid URL param > valid localStorage > first location
-    if (locationExists(urlLocationId)) {
-      return urlLocationId;
-    }
-
-    const storedId = storage.get<string>(LOCAL_STORAGE_KEY.currentLocationId);
-    if (locationExists(storedId)) {
-      return storedId;
-    }
-
-    return locations[0].id;
-  }, [locations, urlLocationId]);
-
-  // Sync URL param when current location changes, preserving other params (e.g.
-  // taxon). Read from the live URL instead of the params of the last render: the
-  // other persisted options sync in the same effect flush, and each would otherwise
-  // overwrite what the previous ones had just written.
-  //
-  // The live URL also decides whether to write at all. A navigation made in an event
-  // handler reaches the URL immediately, while a render in flight can still show the
-  // params from before it; writing then sends the param to the path of that render,
-  // undoing the navigation.
-  useEffect(() => {
-    if (!currentLocationId) return;
-
-    const liveLocationId = new URLSearchParams(window.location.search).get(
-      "location"
+    const isLocationSaved = locations.some(
+      (loc) => loc.id === storedLocationId
     );
-    if (liveLocationId === currentLocationId) return;
 
-    setSearchParams(
-      () => {
-        const nextParams = new URLSearchParams(window.location.search);
-        nextParams.set("location", currentLocationId);
-        return nextParams;
-      },
-      { replace: true }
-    );
-  }, [currentLocationId, urlLocationId, setSearchParams]);
-
-  // Sync localStorage when current location changes
-  useEffect(() => {
-    if (currentLocationId) {
-      storage.set(LOCAL_STORAGE_KEY.currentLocationId, currentLocationId);
-    } else {
-      storage.remove(LOCAL_STORAGE_KEY.currentLocationId);
-    }
-  }, [currentLocationId]);
-
-  const setCurrentLocationId = (id: string) => {
-    storage.set(LOCAL_STORAGE_KEY.currentLocationId, id);
-    setSearchParams(() => {
-      const nextParams = new URLSearchParams(window.location.search);
-      nextParams.set("location", id);
-      return nextParams;
-    });
-  };
+    return isLocationSaved ? storedLocationId : locations[0].id;
+  }, [locations, storedLocationId]);
 
   const currentLocation = locations.find((loc) => loc.id === currentLocationId);
 

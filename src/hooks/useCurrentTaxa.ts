@@ -10,7 +10,6 @@ type UseCurrentTaxaReturn = {
 
 export const useCurrentTaxa = (): UseCurrentTaxaReturn => {
   const [currentTaxa, setCurrentTaxa] = usePersistedOption<Taxa>({
-    searchParamName: "taxa",
     storageKey: LOCAL_STORAGE_KEY.currentTaxa,
     defaultValue: DEFAULT_TAXA,
     isValidValue: isTaxa,

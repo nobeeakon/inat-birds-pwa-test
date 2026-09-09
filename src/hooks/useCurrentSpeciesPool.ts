@@ -20,7 +20,6 @@ type UseCurrentSpeciesPoolReturn = {
 export const useCurrentSpeciesPool = (): UseCurrentSpeciesPoolReturn => {
   const [storedSpeciesPool, setCurrentSpeciesPool] =
     usePersistedOption<SpeciesPool>({
-      searchParamName: "pool",
       storageKey: LOCAL_STORAGE_KEY.currentSpeciesPool,
       defaultValue: DEFAULT_SPECIES_POOL,
       isValidValue: isSpeciesPool,

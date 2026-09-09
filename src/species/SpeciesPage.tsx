@@ -5,7 +5,7 @@ import VirtualizedSpeciesGrid from "@/species/VirtualizedSpeciesGrid";
 import { Alert, Box, Chip, CircularProgress, Typography } from "@mui/material";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
-import { useSpeciesData } from "@/BirdDataContext";
+import { useSpeciesData } from "@/INaturalistDataContext";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
@@ -220,6 +220,8 @@ const SpeciesPage = ({
           <VirtualizedSpeciesGrid
             species={filteredSpeciesData}
             showIndex={!isFiltered}
+            currentLocationId={currentLocationId}
+            currentTaxa={currentTaxa}
           />
         </Box>
       )}

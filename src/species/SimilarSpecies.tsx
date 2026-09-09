@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-import { useSpeciesData } from "@/BirdDataContext";
+import { useSpeciesData } from "@/INaturalistDataContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { getCachedPhotoUrl } from "@/utils";
 import type { SpeciesData } from "@/species/useFetchSpecies";

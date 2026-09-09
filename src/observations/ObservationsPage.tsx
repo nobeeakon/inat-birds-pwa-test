@@ -14,10 +14,15 @@ import Header from "@/observations/Header";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
-import { useObservationsData } from "@/BirdDataContext";
+import { useObservationsData } from "@/INaturalistDataContext";
 import { useImagePreloader } from "@/observations/useImagePreloader";
 import type { Taxa } from "@/taxa";
 import type { SpeciesPool } from "@/speciesPool";
+import {
+  addExclusionScope,
+  isSpeciesExcluded,
+  removeExclusionScope,
+} from "@/exclusions";
 // TODO add an error boundary
 
 const ObservationsPage = ({
@@ -50,8 +55,12 @@ const ObservationsPage = ({
   } = useObservationsData();
 
   const speciesInfo = state.status === "success" ? state.data : null;
-  const speciesToExclude = speciesInfo
-    ? Array.from(speciesInfo.values()).filter((info) => info.exclude)
+  // Only what is hidden while browsing this location and taxa: an exclusion made
+  // elsewhere is not undone from here
+  const excludedSpecies = speciesInfo
+    ? Array.from(speciesInfo.values()).filter((info) =>
+        isSpeciesExcluded(info, currentLocationId, currentTaxa)
+      )
     : [];
 
   useImagePreloader(observations.slice(currentIndex, currentIndex + 3)); // Preload images for next observations to improve navigation performance
@@ -61,12 +70,18 @@ const ObservationsPage = ({
 
     const existingInfo = getSpeciesInfo(currentObservation.taxon.id.toString());
 
-    updateSpeciesInfo(currentObservation.taxon.id.toString(), {
-      ...(existingInfo ?? {}),
-      taxonId: currentObservation.taxon.id.toString(),
-      speciesName: currentObservation.taxon.name,
-      exclude: true,
-    });
+    updateSpeciesInfo(
+      currentObservation.taxon.id.toString(),
+      addExclusionScope(
+        {
+          ...(existingInfo ?? {}),
+          taxonId: currentObservation.taxon.id.toString(),
+          speciesName: currentObservation.taxon.name,
+        },
+        currentLocationId,
+        currentTaxa
+      )
+    );
 
     // Move to next item
     goToNextObservation();
@@ -89,15 +104,15 @@ const ObservationsPage = ({
       {showEditExcludedTaxa && (
         <Box sx={{ my: 2 }}>
           <Stack spacing={1}>
-            {speciesToExclude.map((info) => (
+            {excludedSpecies.map((info) => (
               <Chip
                 key={info.taxonId}
                 label={info.speciesName}
                 onDelete={() => {
-                  updateSpeciesInfo(info.taxonId, {
-                    ...info,
-                    exclude: undefined,
-                  });
+                  updateSpeciesInfo(
+                    info.taxonId,
+                    removeExclusionScope(info, currentLocationId, currentTaxa)
+                  );
                 }}
                 sx={{ justifyContent: "space-between" }}
               />

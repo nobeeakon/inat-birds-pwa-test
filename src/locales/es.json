@@ -25,6 +25,7 @@
   "error": "Error",
   "errorOccurred": "Hubo un error",
   "exclude": "Excluir",
+  "excludedHere": "Excluida aquí",
   "excludeSpecies": "Excluidas",
   "filterByCategory": "Filtrar por categoría",
   "geolocationNotSupported": "La geolocalización no es compatible con tu navegador",
@@ -112,7 +113,12 @@
   "speciesPoolTop50": "50 más comunes",
   "taxa": "Taxones",
   "taxaAmphibia": "Anfibios",
+  "taxaArachnida": "Arácnidos",
   "taxaAves": "Aves",
+  "taxaFungi": "Hongos",
+  "taxaInsecta": "Insectos",
+  "taxaMammalia": "Mamíferos",
+  "taxaMollusca": "Moluscos",
   "taxaPlantae": "Plantas",
   "useCurrentLocation": "Usar ubicación actual"
 }
