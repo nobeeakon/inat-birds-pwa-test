@@ -120,14 +120,13 @@ const EditLocation = ({
             type="button"
             onClick={() => setIsMapClickEnabled(!isMapClickEnabled)}
             variant={isMapClickEnabled ? "contained" : "outlined"}
-            color={isMapClickEnabled ? "success" : "primary"}
             startIcon={isMapClickEnabled ? undefined : <TouchAppIcon />}
           >
             {isMapClickEnabled ? t("clickOnMapEnabled") : t("enableClickOnMap")}
           </Button>
           <Button
             type="button"
-            variant={isMapClickEnabled ? "contained" : "outlined"}
+            variant="contained"
             onClick={handleGetCurrentLocation}
             startIcon={<MyLocationIcon />}
           >

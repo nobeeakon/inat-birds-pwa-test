@@ -64,7 +64,7 @@ const ObservationCard = ({
 
   return (
     <Card elevation={0} square sx={{ backgroundColor: "transparent" }}>
-      <CardActions sx={{ display: "flex", gap: 2, mb: 1 }}>
+      <CardActions sx={{ display: "flex", gap: 2, mb: 1, mt: 2 }}>
         <Button
           fullWidth
           variant="contained"
