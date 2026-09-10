@@ -69,6 +69,14 @@ export const getObservationsUrlForTaxon = ({
 }) =>
   `https://api.inaturalist.org/v2/observations?verifiable=true&order_by=id&order=desc&page=${page}&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&taxon_id=${taxonId}&${getLocaleQueryParams()}&iconic_taxa%5B%5D=${taxa}&per_page=${perPage}&no_total_hits=true&fields=(comments_count%3A!t%2Ccreated_at%3A!t%2Ccreated_at_details%3Aall%2Ccreated_time_zone%3A!t%2Cfaves_count%3A!t%2Cgeoprivacy%3A!t%2Cid%3A!t%2Cidentifications%3A(current%3A!t)%2Cidentifications_count%3A!t%2Clocation%3A!t%2Cmappable%3A!t%2Cobscured%3A!t%2Cobserved_on%3A!t%2Cobserved_on_details%3Aall%2Cobserved_time_zone%3A!t%2Cphotos%3A(id%3A!t%2Curl%3A!t)%2Cplace_guess%3A!t%2Cprivate_geojson%3A!t%2Cquality_grade%3A!t%2Csounds%3A(id%3A!t)%2Cspecies_guess%3A!t%2Ctaxon%3A(conservation_status%3A(status%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_id%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t)%2Ctime_observed_at%3A!t%2Cuser%3A(icon_url%3A!t%2Cid%3A!t%2Clogin%3A!t))`;
 
+/**
+ * The photos iNaturalist keeps on the taxon itself, which are curated pictures of the
+ * species rather than of one sighting. Only the photo fields are asked for: the card
+ * that shows them already has the taxon details from the observation.
+ */
+export const getTaxonPhotosUrl = (taxonId: number) =>
+  `https://api.inaturalist.org/v2/taxa/${taxonId}?${getLocaleQueryParams()}&fields=(taxon_photos%3A(photo%3A(id%3A!t%2Cmedium_url%3A!t%2Curl%3A!t)))`;
+
 // TODO use this one
 export const getUrl = ({
   type,
