@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import TaxonSummary from "@/components/TaxonSummary";
 import SpeciesCategories from "@/components/SpeciesCategories";
+import { formatConservationStatus } from "@/conservation";
 import { type ObservationType } from "@/observations/useFetchObservations";
 import { useTaxonPhotos } from "@/observations/useTaxonPhotos";
 import type { ObservationStatus } from "@/observations/types";
@@ -79,13 +80,9 @@ const ObservationCard = ({
 
   const imgUrl = photos.length > 0 ? photos[photoIdx].imageUrl : null;
 
-  const isSpeciesPhoto = photoIdx >= observationPhotos.length;
-  const photoGroupSize = isSpeciesPhoto
-    ? speciesPhotos.length
-    : observationPhotos.length;
-  const photoPositionInGroup = isSpeciesPhoto
-    ? photoIdx - observationPhotos.length + 1
-    : photoIdx + 1;
+  // Before the reveal the only photos are this sighting's, and the counter says nothing
+  // the previous/next buttons don't already show
+  const showPhotoCounter = speciesPhotos.length > 0;
 
   const onNextPhoto = () => {
     setPhotoSelection({
@@ -144,7 +141,7 @@ const ObservationCard = ({
               data.taxon?.preferred_common_name,
               data.family,
               data.taxon?.establishment_means?.establishment_means,
-              data.taxon?.conservation_status?.status,
+              formatConservationStatus(data.taxon?.conservation_status),
             ]}
           />
 
@@ -183,13 +180,13 @@ const ObservationCard = ({
             }}
           >
             {isLoadingTaxonPhotos && <CircularProgress size={14} />}
-            <Typography variant="caption" color="text.secondary" noWrap>
-              {taxonPhotosError
-                ? t("speciesPhotosError")
-                : `${
-                    isSpeciesPhoto ? t("speciesPhotos") : t("observationPhotos")
-                  } ${photoPositionInGroup}/${photoGroupSize}`}
-            </Typography>
+            {(taxonPhotosError || showPhotoCounter) && (
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {taxonPhotosError
+                  ? t("speciesPhotosError")
+                  : `${photoIdx + 1}/${photos.length}`}
+              </Typography>
+            )}
           </Box>
 
           <Button

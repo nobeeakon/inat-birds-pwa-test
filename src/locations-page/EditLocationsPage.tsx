@@ -22,6 +22,7 @@ import { useLocationsContext } from "@/LocationsContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
+import Tutorial from "@/components/Tutorial";
 
 const EditLocation = ({
   location,
@@ -247,6 +248,8 @@ const LocationsPage = () => {
             onDone={onDoneEditing}
           />
         ) : locationsInfo.length === 0 ? (
+          // Nothing saved yet means this is a first visit, so the tutorial goes here
+          // rather than behind the about link the user has no reason to look for
           <Stack spacing={3} sx={{ alignItems: "center", py: 8 }}>
             <Typography variant="h6" sx={{ textAlign: "center" }}>
               {t("noLocationsYet")}
@@ -259,19 +262,7 @@ const LocationsPage = () => {
             >
               {t("addLocation")}
             </Button>
-            {/* Nested so the two paragraphs read as one block instead of being pushed
-                apart by the spacing of the surrounding stack */}
-            <Stack
-              spacing={1}
-              sx={{ alignItems: "center", textAlign: "center", maxWidth: 400 }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                {t("aboutDescription")}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t("aboutDataSource")}
-              </Typography>
-            </Stack>
+            <Tutorial />
           </Stack>
         ) : (
           <>

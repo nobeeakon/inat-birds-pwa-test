@@ -18,6 +18,7 @@ const Header = ({
   updateTaxa,
   currentSpeciesPool,
   updateSpeciesPool,
+  hasExcludedSpecies,
   toggleEditExcludedTaxa,
 }: {
   currentLocationId: string;
@@ -26,6 +27,7 @@ const Header = ({
   updateTaxa: (newTaxa: Taxa) => void;
   currentSpeciesPool: SpeciesPool;
   updateSpeciesPool: (newSpeciesPool: SpeciesPool) => void;
+  hasExcludedSpecies: boolean;
   toggleEditExcludedTaxa: () => void;
 }) => {
   const { t } = useTranslation();
@@ -47,7 +49,11 @@ const Header = ({
         />
       }
       extraActions={
-        <Button onClick={toggleEditExcludedTaxa}>{t("excludeSpecies")}</Button>
+        hasExcludedSpecies ? (
+          <Button onClick={toggleEditExcludedTaxa}>
+            {t("excludeSpecies")}
+          </Button>
+        ) : undefined
       }
     />
   );

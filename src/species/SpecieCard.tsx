@@ -3,6 +3,7 @@ import { Box, Button, Card, CardMedia, CardContent } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import TaxonSummary from "@/components/TaxonSummary";
 import SpeciesCategories from "@/components/SpeciesCategories";
+import { formatConservationStatus } from "@/conservation";
 import SimilarSpecies from "@/species/SimilarSpecies";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import {
@@ -81,7 +82,7 @@ const SpecieCard = ({
             familyName,
             t("observationCount", { count: data.count }),
             data.taxon.establishment_means?.establishment_means,
-            data.taxon.conservation_status?.status,
+            formatConservationStatus(data.taxon.conservation_status),
           ]}
         />
 

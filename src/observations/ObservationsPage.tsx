@@ -96,12 +96,14 @@ const ObservationsPage = ({
         updateTaxa={updateTaxa}
         currentSpeciesPool={currentSpeciesPool}
         updateSpeciesPool={updateSpeciesPool}
+        hasExcludedSpecies={excludedSpecies.length > 0}
         toggleEditExcludedTaxa={() =>
           setShowEditExcludedTaxa(!showEditExcludedTaxa)
         }
       />
 
-      {showEditExcludedTaxa && (
+      {/* Removing the last exclusion also hides the button that opened this panel */}
+      {showEditExcludedTaxa && excludedSpecies.length > 0 && (
         <Box sx={{ my: 2 }}>
           <Stack spacing={1}>
             {excludedSpecies.map((info) => (

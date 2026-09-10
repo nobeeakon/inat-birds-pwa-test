@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import type { ConservationStatus } from "@/conservation";
 import { fetchData } from "@/fetchData";
+import { resolveCountryPlaceId } from "@/placeLookup";
 import { sleep, getUrl } from "@/utils";
 import {
   readCachedSpeciesList,
@@ -44,10 +46,7 @@ export type SpeciesData = {
     establishment_means?: {
       establishment_means: string;
     };
-    conservation_status?: {
-      id: number;
-      status: string;
-    };
+    conservation_status?: ConservationStatus;
   };
 };
 
@@ -84,6 +83,10 @@ const fetchSpecies = async ({
 }): Promise<FetchSpeciesResult> => {
   const species: SpeciesData[] = [];
   let totalResults = 0;
+
+  // Before the first URL is built, so every page asks for the country's common names,
+  // endemicity and conservation listings rather than the global ones
+  await resolveCountryPlaceId({ lat, lng });
 
   const numberOfPages = Math.ceil(MAX_SPECIES_TO_FETCH / SPECIES_PER_PAGE);
 

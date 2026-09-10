@@ -1,9 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { FormControl, Select, MenuItem, InputLabel } from "@mui/material";
+import { Select, MenuItem } from "@mui/material";
 
 import { TAXA, useTaxaLabels } from "@/taxa";
 import type { Taxa } from "@/taxa";
 
+/**
+ * Lives in the app bar, so it is drawn as bare inherited-colour text rather than an
+ * outlined field: the label chrome would compete with the toolbar's own controls and
+ * eat the horizontal space phones do not have. The visible value names the taxa, and
+ * the aria-label carries the "group" wording for screen readers.
+ */
 const TaxaSelector = ({
   currentTaxa,
   updateTaxa,
@@ -15,22 +21,25 @@ const TaxaSelector = ({
   const taxaLabels = useTaxaLabels();
 
   return (
-    <FormControl size="small" sx={{ minWidth: 200 }}>
-      <InputLabel id="taxa-selector-label">{t("taxa")}</InputLabel>
-      <Select
-        labelId="taxa-selector-label"
-        id="taxa-selector"
-        value={currentTaxa}
-        label={t("taxa")}
-        onChange={(e) => updateTaxa(e.target.value as Taxa)}
-      >
-        {TAXA.map((taxaOption) => (
-          <MenuItem key={taxaOption} value={taxaOption}>
-            {taxaLabels[taxaOption]}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+    <Select
+      id="taxa-selector"
+      value={currentTaxa}
+      onChange={(event) => updateTaxa(event.target.value as Taxa)}
+      variant="standard"
+      disableUnderline
+      inputProps={{ "aria-label": t("group") }}
+      sx={{
+        color: "inherit",
+        "& .MuiSelect-select": { py: 0.5 },
+        "& .MuiSelect-icon": { color: "inherit" },
+      }}
+    >
+      {TAXA.map((taxaOption) => (
+        <MenuItem key={taxaOption} value={taxaOption}>
+          {taxaLabels[taxaOption]}
+        </MenuItem>
+      ))}
+    </Select>
   );
 };
 

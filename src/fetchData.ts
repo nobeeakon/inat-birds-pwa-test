@@ -1,4 +1,4 @@
-import { getInaturalistSite } from "@/inaturalistSite";
+import { INATURALIST_SITE_URL } from "@/constants";
 
 export const fetchData = <T>(URL: string): Promise<T> =>
   fetch(URL, {
@@ -12,7 +12,7 @@ export const fetchData = <T>(URL: string): Promise<T> =>
       "Sec-Fetch-Mode": "cors",
       "Sec-Fetch-Site": "same-site",
     },
-    referrer: `${getInaturalistSite().siteUrl}/`,
+    referrer: `${INATURALIST_SITE_URL}/`,
     method: "GET",
     mode: "cors",
   }).then((response) => response.json());

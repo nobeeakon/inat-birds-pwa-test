@@ -10,6 +10,9 @@ import { Icon } from "leaflet";
 import { useEffect, useState } from "react";
 import { Box, CircularProgress } from "@mui/material";
 
+// Imported here rather than in main so it ships with the lazily loaded map chunk
+import "leaflet/dist/leaflet.css";
+
 // Fix for default marker icon issue in React-Leaflet
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";

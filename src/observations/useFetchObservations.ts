@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchData } from "@/fetchData";
+import type { ConservationStatus } from "@/conservation";
+import { resolveCountryPlaceId } from "@/placeLookup";
 import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
 import {
   readCachedObservations,
@@ -62,9 +64,7 @@ export type ObservationType = {
   sounds: [];
   taxon: {
     id: number;
-    conservation_status?: {
-      status?: string;
-    };
+    conservation_status?: ConservationStatus;
     establishment_means?: {
       establishment_means: string;
     };
@@ -288,6 +288,10 @@ export const useFetchObservations = ({
       });
 
       try {
+        // Before the first URL is built, so the species and their observations come
+        // back with the country's common names, endemicity and conservation listings
+        await resolveCountryPlaceId({ lat, lng });
+
         // Stage 1: Pick the species to fetch observations for
         const speciesToFetch =
           categoryTaxonIds !== null

@@ -1,14 +1,33 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Box, CircularProgress } from "@mui/material";
 
 import ObservationsPage from "@/observations/ObservationsPage";
-import SpeciesPage from "@/species/SpeciesPage";
-import LocationsPage from "./locations-page/EditLocationsPage";
 import INaturalistDataContextProvider from "@/INaturalistDataContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useCurrentTaxa } from "@/hooks/useCurrentTaxa";
 import { useCurrentSpeciesPool } from "@/hooks/useCurrentSpeciesPool";
 
 import "./App.css";
+
+// The observations page is the landing route, so it stays in the main bundle. The
+// rest are split out; the locations page in particular pulls in Leaflet.
+const SpeciesPage = lazy(() => import("@/species/SpeciesPage"));
+const LocationsPage = lazy(() => import("./locations-page/EditLocationsPage"));
+const AboutPage = lazy(() => import("@/about/AboutPage"));
+
+const PageFallback = () => (
+  <Box
+    sx={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      p: 8,
+    }}
+  >
+    <CircularProgress />
+  </Box>
+);
 
 const Router = () => {
   const { currentLocation, setCurrentLocationId } = useCurrentLocation();
@@ -18,11 +37,14 @@ const Router = () => {
   // Locations page when no location is set yet
   if (!currentLocation) {
     return (
-      <Routes>
-        <Route path="/" element={<LocationsPage />} />
-        <Route path="/locations" element={<LocationsPage />} />
-        <Route path="*" element={<Navigate to="/locations" replace />} />
-      </Routes>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/" element={<LocationsPage />} />
+          <Route path="/locations" element={<LocationsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="*" element={<Navigate to="/locations" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 
@@ -43,25 +65,28 @@ const Router = () => {
       currentTaxa={currentTaxa}
       currentSpeciesPool={currentSpeciesPool}
     >
-      <Routes>
-        <Route path="/locations" element={<LocationsPage />} />
-        {/* Rendered rather than redirected to, so the landing path costs no extra
-            navigation */}
-        <Route path="/" element={observationsPage} />
-        <Route path="/observations" element={observationsPage} />
-        <Route
-          path="/species"
-          element={
-            <SpeciesPage
-              currentLocationId={currentLocation.id}
-              currentTaxa={currentTaxa}
-              updateLocation={setCurrentLocationId}
-              updateTaxa={setCurrentTaxa}
-            />
-          }
-        />
-        <Route path="*" element={<Navigate to="/observations" replace />} />
-      </Routes>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
+          <Route path="/locations" element={<LocationsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          {/* Rendered rather than redirected to, so the landing path costs no extra
+              navigation */}
+          <Route path="/" element={observationsPage} />
+          <Route path="/observations" element={observationsPage} />
+          <Route
+            path="/species"
+            element={
+              <SpeciesPage
+                currentLocationId={currentLocation.id}
+                currentTaxa={currentTaxa}
+                updateLocation={setCurrentLocationId}
+                updateTaxa={setCurrentTaxa}
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/observations" replace />} />
+        </Routes>
+      </Suspense>
     </INaturalistDataContextProvider>
   );
 };

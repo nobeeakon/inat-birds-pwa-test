@@ -27,7 +27,6 @@ import TranslateIcon from "@mui/icons-material/Translate";
 
 import { useLanguageContext } from "@/LanguageContext";
 import { useLocationsContext } from "@/LocationsContext";
-import AboutDialog from "@/components/AboutDialog";
 import TaxaSelector from "@/components/TaxaSelector";
 import { useStorageState } from "@/storage/storage";
 import type { Taxa } from "@/taxa";
@@ -72,7 +71,6 @@ const AppHeader = ({
     false
   );
   const [showConfig, setShowConfig] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const locations = useLocationsContext().locationsInfo;
   const { openLanguageSelector } = useLanguageContext();
 
@@ -111,6 +109,7 @@ const AppHeader = ({
                   {navigateToLabel}
                 </MuiLink>
               </Stack>
+              <TaxaSelector currentTaxa={currentTaxa} updateTaxa={updateTaxa} />
               {isMobile && (
                 <IconButton
                   size="large"
@@ -143,7 +142,8 @@ const AppHeader = ({
                   {t("changeLanguage")}
                 </Button>
                 <Button
-                  onClick={() => setShowAbout(true)}
+                  component={Link}
+                  to="/about"
                   startIcon={<HelpOutlineIcon />}
                 >
                   {t("about")}
@@ -163,13 +163,13 @@ const AppHeader = ({
               >
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel id="location-selector-label">
-                    {t("data")}
+                    {t("location")}
                   </InputLabel>
                   <Select
                     labelId="location-selector-label"
                     id="location-selector"
                     value={currentLocationId}
-                    label={t("data")}
+                    label={t("location")}
                     onChange={(e) => updateLocation(e.target.value)}
                   >
                     <MenuItem value="">{t("selectLocation")}</MenuItem>
@@ -180,10 +180,6 @@ const AppHeader = ({
                     ))}
                   </Select>
                 </FormControl>
-                <TaxaSelector
-                  currentTaxa={currentTaxa}
-                  updateTaxa={updateTaxa}
-                />
                 {extraControls}
 
                 {extraActions}
@@ -192,10 +188,6 @@ const AppHeader = ({
           )}
         </Box>
       </Collapse>
-
-      {/* Outside the Collapse, which unmounts its children: hiding the bar on a phone
-          would otherwise close the dialog opened from it */}
-      <AboutDialog isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
       {isMobile && !isNavBarShown && (
         <Fab
