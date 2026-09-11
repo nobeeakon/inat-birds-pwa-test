@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   TextField,
   Button,
@@ -22,6 +22,7 @@ import { useLocationsContext } from "@/LocationsContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
+import { ADD_LOCATION_SEARCH_PARAM } from "./addLocationParam";
 
 const EditLocation = ({
   location,
@@ -167,6 +168,7 @@ const buildNewLocation = (): LocationInformation => ({
 const LocationsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { locationsInfo, setLocationsInfo } = useLocationsContext();
   const { setCurrentLocationId } = useCurrentLocation();
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
@@ -174,12 +176,27 @@ const LocationsPage = () => {
   );
   // A location being created lives here, out of the saved list, until the user submits the
   // form. Otherwise abandoning the form leaves an unfilled default location behind.
-  // A user with nothing saved came here to add their first location, so the form starts
-  // open rather than behind one more button.
+  // A user with nothing saved came here to add their first location, and so did one who
+  // arrived from the location selector, so the form starts open rather than behind one
+  // more button.
   const [newLocationDraft, setNewLocationDraft] =
     useState<LocationInformation | null>(() =>
-      locationsInfo.length === 0 ? buildNewLocation() : null
+      locationsInfo.length === 0 || searchParams.has(ADD_LOCATION_SEARCH_PARAM)
+        ? buildNewLocation()
+        : null
     );
+
+  // Dropped once the form it asked for is resolved, so reloading or coming back does not
+  // reopen it
+  const forgetAddLocationRequest = () => {
+    if (!searchParams.has(ADD_LOCATION_SEARCH_PARAM)) {
+      return;
+    }
+
+    const remainingParams = new URLSearchParams(searchParams);
+    remainingParams.delete(ADD_LOCATION_SEARCH_PARAM);
+    setSearchParams(remainingParams, { replace: true });
+  };
 
   const savedSelectedLocation =
     locationsInfo.find((loc) => loc.id === selectedLocationId) ?? null;
@@ -219,6 +236,7 @@ const LocationsPage = () => {
     if (newLocationDraft) {
       setLocationsInfo([...locationsInfo, newLocationDraft]);
       setNewLocationDraft(null);
+      forgetAddLocationRequest();
       goToObservationsOf(newLocationDraft.id);
       return;
     }
@@ -233,6 +251,7 @@ const LocationsPage = () => {
   const onDiscardEditedLocation = () => {
     if (newLocationDraft) {
       setNewLocationDraft(null);
+      forgetAddLocationRequest();
       return;
     }
 

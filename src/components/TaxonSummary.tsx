@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Link, Typography } from "@mui/material";
 
 import { INATURALIST_SITE_URL } from "@/constants";
 
@@ -21,7 +21,7 @@ const TaxonSummary = ({
 }: {
   taxonId: number;
   scientificName: string;
-  /** Position in the species list, shown before the name when the list is unfiltered. */
+  /** Place in the full species list, shown before the name and kept while filtering. */
   index?: number;
   /** Enlarges the name on small screens, for cards where it is the answer being revealed. */
   prominentName?: boolean;
@@ -32,16 +32,27 @@ const TaxonSummary = ({
 
   return (
     <Box>
+      {/* Binomials are set in italics by convention, and the serif is the one place the
+          app looks like the printed guide it stands in for */}
       <Typography
         component="p"
-        sx={prominentName ? { fontSize: { xs: "1.4rem", sm: "1rem" } } : {}}
+        sx={{
+          fontFamily: (theme) => theme.typography.h6.fontFamily,
+          fontStyle: "italic",
+          fontWeight: 600,
+          ...(prominentName
+            ? { fontSize: { xs: "1.5rem", sm: "1.15rem" } }
+            : {}),
+        }}
       >
-        <strong>
-          {index != null && `${index}. `}
-          <a href={`${INATURALIST_SITE_URL}/taxa/${taxonId}`} target="blank">
-            {scientificName}
-          </a>
-        </strong>
+        {index != null && `${index}. `}
+        <Link
+          href={`${INATURALIST_SITE_URL}/taxa/${taxonId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {scientificName}
+        </Link>
       </Typography>
 
       {visibleDetails.length > 0 && (

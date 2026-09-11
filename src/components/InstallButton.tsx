@@ -10,6 +10,13 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+// A long cycle with a short ripple at the start: noticeable on arrival, easy to
+// ignore while reading
+const RING_CYCLE_MS = 5200;
+const RING_TRAIL_DELAY_MS = 700;
+const RING_VISIBLE_FRACTION = 0.2;
+const RING_SPREAD_PX = 11;
+
 const isRunningStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches ||
   (window.navigator as { standalone?: boolean }).standalone === true;
@@ -90,14 +97,48 @@ const InstallButton = () => {
         color="primary"
         onClick={handleInstallClick}
         startIcon={<InstallMobileIcon />}
-        sx={{
+        sx={(theme) => ({
           position: "fixed",
-          // Sits above the nav bar toggle, which occupies the same corner
-          bottom: 72,
+          // Clear of the rating buttons at the foot of the observations screen
+          bottom: 80,
           right: 16,
           zIndex: 1000,
           boxShadow: 3,
-        }}
+          // The ring grows past the button's edge, which ButtonBase clips by
+          // default; the touch ripple does its own clipping, so it stays inside
+          overflow: "visible",
+          "&::before, &::after": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            borderRadius: "inherit",
+            pointerEvents: "none",
+            // Growing a shadow's spread keeps the ring's rounded corners exact,
+            // and leaves the button itself perfectly still
+            animation: `install-ring ${RING_CYCLE_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1) infinite`,
+          },
+          // A second ring trailing the first reads as one soft ripple
+          "&::after": {
+            animationDelay: `${RING_TRAIL_DELAY_MS}ms`,
+          },
+          "@keyframes install-ring": {
+            "0%": {
+              opacity: 0.5,
+              boxShadow: `0 0 0 0 ${theme.palette.primary.light}`,
+            },
+            // The ripple takes a fifth of the cycle; the rest is a long rest,
+            // so the button asks for attention rather than demanding it
+            [`${RING_VISIBLE_FRACTION * 100}%, 100%`]: {
+              opacity: 0,
+              boxShadow: `0 0 0 ${RING_SPREAD_PX}px ${theme.palette.primary.light}`,
+            },
+          },
+          "@media (prefers-reduced-motion: reduce)": {
+            "&::before, &::after": {
+              animation: "none",
+            },
+          },
+        })}
       >
         {t("installApp")}
       </Button>

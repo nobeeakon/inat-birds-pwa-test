@@ -30,8 +30,10 @@ export default defineConfig({
         short_name: "iNat memorama",
         description:
           "memorama for species. Data from iNaturalist, the app is for test purpose only",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        // Kept in step with the palette in src/theme.ts, so the splash screen and the
+        // system chrome around the installed app match the app itself
+        theme_color: "#2f6f4e",
+        background_color: "#f6f4ef",
         display: "standalone",
         icons: [
           {

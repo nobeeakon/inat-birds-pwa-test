@@ -12,8 +12,8 @@ import type { Taxa } from "@/taxa";
  * A location runs into the hundreds of species and every card mounts a photo plus two
  * dialogs, which is what makes scrolling and filtering slow on a phone. Rows are
  * virtualized rather than individual cards so the reading order stays the same as the
- * plain flex-wrap grid it replaces: a masonry-style column layout would break the
- * numbering shown on each card.
+ * plain flex-wrap grid it replaces: a masonry-style column layout would read down the
+ * columns while the cards are numbered across the rows.
  *
  * The window is the scroll container (no page-level scroll wrapper exists), so row
  * offsets are measured against the document and shifted by the distance from the top
@@ -53,13 +53,13 @@ const chunkIntoRows = (species: SpeciesData[], columnCount: number) => {
 
 const VirtualizedSpeciesGrid = ({
   species,
-  showIndex,
+  speciesRankByTaxonId,
   currentLocationId,
   currentTaxa,
 }: {
   species: SpeciesData[];
-  /** Numbers each card by its position, only meaningful on the unfiltered list. */
-  showIndex: boolean;
+  /** Each species' place in the unfiltered list, which is the number its card shows. */
+  speciesRankByTaxonId: Map<number, number>;
   /** The scope an exclusion made from a card applies to. */
   currentLocationId: string;
   currentTaxa: Taxa;
@@ -150,7 +150,7 @@ const VirtualizedSpeciesGrid = ({
               }px)`,
             }}
           >
-            {row.map((item, columnIndex) => (
+            {row.map((item) => (
               <Box
                 key={`spp-${item.taxon.id}`}
                 // Shrinks below the card width on a narrow phone, never grows past it
@@ -160,11 +160,7 @@ const VirtualizedSpeciesGrid = ({
                   data={item}
                   currentLocationId={currentLocationId}
                   currentTaxa={currentTaxa}
-                  idx={
-                    showIndex
-                      ? virtualRow.index * columnCount + columnIndex + 1
-                      : undefined
-                  }
+                  idx={speciesRankByTaxonId.get(item.taxon.id)}
                 />
               </Box>
             ))}

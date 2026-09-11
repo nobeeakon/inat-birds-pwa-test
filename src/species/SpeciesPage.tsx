@@ -6,6 +6,7 @@ import { Alert, Box, Chip, CircularProgress, Typography } from "@mui/material";
 import { useCategoriesContext } from "@/CategoriesContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useSpeciesData } from "@/INaturalistDataContext";
+import { useEstablishmentMeansLabel } from "@/establishment";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
@@ -31,6 +32,7 @@ const SpeciesPage = ({
     null
   );
 
+  const getEstablishmentMeansLabel = useEstablishmentMeansLabel();
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
   const speciesData = useSpeciesData();
@@ -74,7 +76,19 @@ const SpeciesPage = ({
       ? selectedCategoryId
       : null;
 
-  const isFiltered = !!deferredSearchTerm || activeCategoryId !== null;
+  // Ranks come from the unfiltered list and travel with the species, so a filtered
+  // card still says where it sits among all of them: "3, 41, 58" tells you how thinly
+  // the matches are spread, which renumbering them "1, 2, 3" would hide
+  const speciesRankByTaxonId = useMemo(
+    () =>
+      new Map(
+        (allSpecies ?? []).map((item, itemIndex) => [
+          item.taxon.id,
+          itemIndex + 1,
+        ])
+      ),
+    [allSpecies]
+  );
 
   const filteredSpeciesData = useMemo(() => {
     if (!allSpecies) {
@@ -109,10 +123,13 @@ const SpeciesPage = ({
         ?.toLowerCase()
         .includes(lowerSearchTerm);
 
-      // iNaturalist returns these untranslated ("native", "introduced",
-      // "endemic"), which is also how the card shows them
+      // Matched on the translated label, since that is what the card shows; the
+      // English value iNaturalist returns keeps matching for anyone who types it
+      const establishmentMeans =
+        item.taxon.establishment_means?.establishment_means;
       const includesEstablishmentMeans =
-        item.taxon.establishment_means?.establishment_means
+        establishmentMeans?.toLowerCase().includes(lowerSearchTerm) ||
+        getEstablishmentMeansLabel(establishmentMeans)
           ?.toLowerCase()
           .includes(lowerSearchTerm);
 
@@ -137,6 +154,7 @@ const SpeciesPage = ({
     activeCategoryId,
     getSpeciesInfo,
     getCategory,
+    getEstablishmentMeansLabel,
   ]);
 
   return (
@@ -156,7 +174,7 @@ const SpeciesPage = ({
         <LoadingWithNatureFacts />
       )}
       {filteredSpeciesData && (
-        <Box sx={{ p: 4 }}>
+        <Box component="main" sx={{ px: 2, py: 2 }}>
           {speciesData.loading && speciesData.isCachedData && (
             <Alert
               severity="info"
@@ -174,7 +192,9 @@ const SpeciesPage = ({
               })}
             </Alert>
           )}
-          <Box sx={{ mb: 1.5 }}>
+          {/* Title and count on one line rather than stacked: two lines of chrome above
+              a list is one line too many on a phone */}
+          <Box sx={{ mb: 1, display: "flex", alignItems: "baseline", gap: 1 }}>
             <Typography variant="h6" component="h2" sx={{ lineHeight: 1.2 }}>
               {t("species")}
             </Typography>
@@ -219,7 +239,7 @@ const SpeciesPage = ({
 
           <VirtualizedSpeciesGrid
             species={filteredSpeciesData}
-            showIndex={!isFiltered}
+            speciesRankByTaxonId={speciesRankByTaxonId}
             currentLocationId={currentLocationId}
             currentTaxa={currentTaxa}
           />

@@ -29,9 +29,12 @@ import type { Category } from "@/storage/db";
 const SpeciesCategories = ({
   taxonId,
   speciesName,
+  isOnScrim = false,
 }: {
   taxonId: number;
   speciesName?: string;
+  /** Set when the row sits on a photo's caption scrim, where the theme's green vanishes. */
+  isOnScrim?: boolean;
 }) => {
   const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -89,12 +92,37 @@ const SpeciesCategories = ({
   return (
     <Box sx={{ mt: 0.5 }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-        {assignedCategories.map((category) => (
-          <Chip key={category.id} label={category.name} size="small" />
-        ))}
-        <Button size="small" onClick={() => setIsDialogOpen(true)}>
+        <Button
+          size="small"
+          onClick={() => setIsDialogOpen(true)}
+          sx={
+            isOnScrim
+              ? {
+                  color: "common.white",
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.16)",
+                  },
+                }
+              : undefined
+          }
+        >
           {t("categories")}
         </Button>
+        {assignedCategories.map((category) => (
+          <Chip
+            key={category.id}
+            label={category.name}
+            size="small"
+            sx={
+              isOnScrim
+                ? {
+                    color: "common.white",
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  }
+                : undefined
+            }
+          />
+        ))}
       </Stack>
 
       <Dialog

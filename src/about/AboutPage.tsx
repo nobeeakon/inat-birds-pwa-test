@@ -15,25 +15,32 @@ const AboutPage = () => {
   return (
     <Box>
       <AppBar position="static">
-        <Toolbar>
+        <Toolbar variant="dense" sx={{ gap: 1, px: 1 }}>
           <IconButton
             component={Link}
             to="/"
-            size="large"
-            edge="start"
+            size="small"
             color="inherit"
             aria-label={t("back")}
-            sx={{ mr: 2 }}
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h6" component="h1">
+          <Typography
+            variant="h6"
+            component="h1"
+            sx={{ fontSize: "1.0625rem" }}
+          >
             {t("about")}
           </Typography>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ mt: 2, px: 4, pb: 4 }}>
+      {/* Centred on wide screens: the tutorial is a column of prose and two phone-sized
+          screenshots, and neither gains anything from the extra width */}
+      <Box
+        component="main"
+        sx={{ px: 2, py: 2, pb: 4, maxWidth: 640, mx: "auto" }}
+      >
         <Tutorial />
       </Box>
     </Box>

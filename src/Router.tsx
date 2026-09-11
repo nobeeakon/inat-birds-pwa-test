@@ -9,8 +9,6 @@ import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useCurrentTaxa } from "@/hooks/useCurrentTaxa";
 import { useCurrentSpeciesPool } from "@/hooks/useCurrentSpeciesPool";
 
-import "./App.css";
-
 // The observations page is the landing route, so it stays in the main bundle. The
 // rest are split out; the locations page in particular pulls in Leaflet.
 const SpeciesPage = lazy(() => import("@/species/SpeciesPage"));

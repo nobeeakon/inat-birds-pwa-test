@@ -9,6 +9,16 @@ export const getRandomIndex = (length: number) =>
   Math.floor(Math.random() * length);
 
 /**
+ * Common names come back however the contributor typed them, so one list mixes
+ * "Garambullo" with "garambullo". Only the first letter is touched: the rest carries
+ * names such as "pico de oro" or "halcón de Harris" that would be wrong in title case.
+ */
+export const capitalizeFirstLetter = (
+  value: string | null | undefined
+): string | null | undefined =>
+  value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+/**
  * Turns the square photo URL the API returns into the one the service worker keeps
  * offline (see the photo caching rule in vite.config.ts). Every place that shows a
  * species photo goes through here so they all hit the same cache entry.

@@ -87,8 +87,18 @@ const ObservationsPage = ({
     goToNextObservation();
   };
 
+  // The whole round is one screenful — header, photo, ratings — so the page is sized to
+  // the viewport and the photo absorbs whatever height the rest does not use. Nothing
+  // here scrolls, which is what keeps the rating buttons reachable on a phone.
   return (
-    <Box>
+    <Box
+      sx={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Header
         currentLocationId={currentLocationId}
         updateLocation={updateLocation}
@@ -102,13 +112,20 @@ const ObservationsPage = ({
         }
       />
 
-      {/* Removing the last exclusion also hides the button that opened this panel */}
+      {/* Removing the last exclusion also hides the button that opened this panel.
+          Capped and scrollable so a long list cannot squeeze the photo out. */}
       {showEditExcludedTaxa && excludedSpecies.length > 0 && (
-        <Box sx={{ my: 2 }}>
-          <Stack spacing={1}>
+        <Box sx={{ px: 1, py: 1, maxHeight: "30dvh", overflowY: "auto" }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{ flexWrap: "wrap" }}
+          >
             {excludedSpecies.map((info) => (
               <Chip
                 key={info.taxonId}
+                size="small"
                 label={info.speciesName}
                 onDelete={() => {
                   updateSpeciesInfo(
@@ -116,14 +133,26 @@ const ObservationsPage = ({
                     removeExclusionScope(info, currentLocationId, currentTaxa)
                   );
                 }}
-                sx={{ justifyContent: "space-between" }}
               />
             ))}
           </Stack>
         </Box>
       )}
 
-      <Box>
+      {/* Capped and centred: the card is one photo and three buttons, and stretching
+          it across a desktop window puts the rating buttons a screen apart */}
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          width: "100%",
+          maxWidth: 640,
+          mx: "auto",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {/* The cached observations stand in for the loading screen when there are any */}
         {loading && observations.length === 0 && <LoadingWithNatureFacts />}
         {error && <Typography>{t("errorOccurred")}</Typography>}

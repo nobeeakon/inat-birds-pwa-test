@@ -21,7 +21,7 @@ import { useTranslation } from "react-i18next";
 
 import { useSpeciesData } from "@/INaturalistDataContext";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
-import { getCachedPhotoUrl } from "@/utils";
+import { capitalizeFirstLetter, getCachedPhotoUrl } from "@/utils";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 
 // The candidate rows load a photo each, so the untargeted list stays short and the
@@ -119,6 +119,9 @@ const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
   return (
     <Box sx={{ mt: 1 }}>
       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+        <Button size="small" onClick={() => setIsDialogOpen(true)}>
+          {t("similarSpecies")}
+        </Button>
         {similarSpeciesIds.map((similarTaxonId) => (
           <Chip
             key={similarTaxonId}
@@ -126,9 +129,6 @@ const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
             size="small"
           />
         ))}
-        <Button size="small" onClick={() => setIsDialogOpen(true)}>
-          {t("similarSpecies")}
-        </Button>
       </Stack>
 
       <Dialog
@@ -151,7 +151,7 @@ const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
             <Box>
               <Typography variant="subtitle2">{species.taxon.name}</Typography>
               <Typography variant="body2" color="text.secondary">
-                {species.taxon.preferred_common_name}
+                {capitalizeFirstLetter(species.taxon.preferred_common_name)}
               </Typography>
             </Box>
           </Stack>
@@ -217,7 +217,9 @@ const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
                     </ListItemAvatar>
                     <ListItemText
                       primary={candidate.taxon.name}
-                      secondary={candidate.taxon.preferred_common_name}
+                      secondary={capitalizeFirstLetter(
+                        candidate.taxon.preferred_common_name
+                      )}
                     />
                     <Checkbox edge="end" checked={isLinked} tabIndex={-1} />
                   </ListItemButton>

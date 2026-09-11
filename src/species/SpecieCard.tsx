@@ -1,8 +1,9 @@
 import { memo } from "react";
-import { Box, Button, Card, CardMedia, CardContent } from "@mui/material";
+import { Box } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import TaxonSummary from "@/components/TaxonSummary";
 import SpeciesCategories from "@/components/SpeciesCategories";
+import ExcludeSpeciesButton from "@/components/ExcludeSpeciesButton";
 import { formatConservationStatus } from "@/conservation";
 import SimilarSpecies from "@/species/SimilarSpecies";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
@@ -14,7 +15,8 @@ import {
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
 import { getFamilyName } from "@/taxonomy";
-import { getCachedPhotoUrl } from "@/utils";
+import { useEstablishmentMeansLabel } from "@/establishment";
+import { capitalizeFirstLetter, getCachedPhotoUrl } from "@/utils";
 
 const SpecieCard = ({
   data,
@@ -29,6 +31,7 @@ const SpecieCard = ({
 }) => {
   const { t } = useTranslation();
   const { getSpeciesInfo, updateSpeciesInfo } = useSpeciesInfoContext();
+  const getEstablishmentMeansLabel = useEstablishmentMeansLabel();
 
   const imageUrl = getCachedPhotoUrl(data.taxon.default_photo?.square_url);
 
@@ -59,29 +62,53 @@ const SpecieCard = ({
     );
   };
 
+  // A plate and its caption rather than a card: no frame, no shadow, no radius. In a
+  // one-column phone layout a card outline is just a box drawn around the whole page,
+  // and in a multi-column one the gap already separates the entries.
   return (
-    <Card sx={{ maxWidth: 400, width: "100%", opacity: isExcluded ? 0.6 : 1 }}>
-      <CardMedia
-        component="img"
-        image={imageUrl}
-        alt={data.taxon.name}
-        sx={{
-          width: "100%",
-          height: "auto",
-          aspectRatio: "4/3",
-          objectFit: "cover",
-        }}
-      />
-      <CardContent>
+    <Box sx={{ maxWidth: 400, width: "100%" }}>
+      <Box sx={{ position: "relative" }}>
+        <Box
+          component="img"
+          src={imageUrl}
+          alt={data.taxon.name}
+          loading="lazy"
+          // Desaturated as well as faded, so an excluded species is recognisable at a
+          // glance in a grid rather than only in comparison with its neighbours. The
+          // photo and the caption carry it, not the whole card: fading the button that
+          // undoes the exclusion along with them is what it has to stand out against.
+          sx={{
+            display: "block",
+            width: "100%",
+            aspectRatio: "4/3",
+            objectFit: "cover",
+            backgroundColor: "action.hover",
+            opacity: isExcluded ? 0.5 : 1,
+            filter: isExcluded ? "grayscale(0.9)" : "none",
+          }}
+        />
+        {/* On the corner of the photo, as on the observation card: the same control in
+            the same place on both pages */}
+        <Box sx={{ position: "absolute", top: 8, right: 8 }}>
+          <ExcludeSpeciesButton
+            isExcluded={isExcluded}
+            speciesName={data.taxon.name}
+            onToggleExclusion={toggleExclusion}
+          />
+        </Box>
+      </Box>
+      <Box sx={{ pt: 0.75, opacity: isExcluded ? 0.5 : 1 }}>
         <TaxonSummary
           taxonId={data.taxon.id}
           scientificName={data.taxon.name}
           index={idx}
           details={[
-            data.taxon.preferred_common_name,
+            capitalizeFirstLetter(data.taxon.preferred_common_name),
             familyName,
             t("observationCount", { count: data.count }),
-            data.taxon.establishment_means?.establishment_means,
+            getEstablishmentMeansLabel(
+              data.taxon.establishment_means?.establishment_means
+            ),
             formatConservationStatus(data.taxon.conservation_status),
           ]}
         />
@@ -92,19 +119,8 @@ const SpecieCard = ({
         />
 
         <SimilarSpecies species={data} />
-
-        <Box sx={{ mt: 0.5 }}>
-          <Button
-            size="small"
-            color={isExcluded ? "primary" : "inherit"}
-            variant={isExcluded ? "outlined" : "text"}
-            onClick={toggleExclusion}
-          >
-            {isExcluded ? t("excludedHere") : t("exclude")}
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

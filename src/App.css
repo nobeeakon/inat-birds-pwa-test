@@ -1,10 +1,22 @@
-#root {
-  /* margin: 0 auto; */
-  /* text-align: center; */
+/* Photos arrive one at a time as the user pages through observations; fading them in
+   hides the hard swap from one image to the next */
+@keyframes photo-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+.photo-fade-in {
+  animation: photo-fade-in 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-fade-in {
+    animation: none;
   }
 }

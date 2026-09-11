@@ -1,6 +1,7 @@
-import { useTranslation } from "react-i18next";
-import { Box, Stack, Typography } from "@mui/material";
+import { Trans, useTranslation } from "react-i18next";
+import { Box, Link, Stack, Typography } from "@mui/material";
 
+import { INATURALIST_SITE_URL } from "@/constants";
 import { FALLBACK_LANGUAGE, isLanguage, type Language } from "@/language";
 
 import screenshotEnHidden from "@/assets/screenshot_en.jpg";
@@ -86,8 +87,21 @@ const Tutorial = ({
           {t("aboutDescription")}
         </Typography>
       )}
-      <Typography variant="caption" color="text.secondary">
-        {t("aboutDataSource")}
+      {/* The sentence names iNaturalist mid-phrase, and word order differs by language,
+          so the link is a placeholder inside the translated string rather than appended */}
+      <Typography variant="body1" color="text.secondary">
+        <Trans
+          i18nKey="aboutDataSource"
+          components={{
+            inaturalistLink: (
+              <Link
+                href={INATURALIST_SITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            ),
+          }}
+        />
       </Typography>
       <Box>
         <Typography variant="h5" component="h2">
