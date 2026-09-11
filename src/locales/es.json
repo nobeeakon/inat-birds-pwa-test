@@ -32,6 +32,7 @@
   "group": "Grupo",
   "hard": "Difícil",
   "hideMenu": "Ocultar menú",
+  "homeAddLocationHint": "Agrega una ubicación para iniciar.",
   "installApp": "Instalar App",
   "installHelp.androidChromiumStep1": "Abre el menú del navegador (el icono ⋮).",
   "installHelp.androidChromiumStep2": "Elige \"Instalar aplicación\" o \"Añadir a pantalla de inicio\".",

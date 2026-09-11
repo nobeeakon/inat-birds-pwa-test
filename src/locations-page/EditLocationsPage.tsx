@@ -22,7 +22,6 @@ import { useLocationsContext } from "@/LocationsContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import type { LocationInformation } from "@/types";
 import Map from "@/components/Map";
-import Tutorial from "@/components/Tutorial";
 
 const EditLocation = ({
   location,
@@ -160,6 +159,11 @@ const DEFAULT_NEW_LOCATION: LocationInformation = {
   radius: 5,
 };
 
+const buildNewLocation = (): LocationInformation => ({
+  ...DEFAULT_NEW_LOCATION,
+  id: `loc-${Date.now()}`, // Simple unique ID
+});
+
 const LocationsPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -170,8 +174,12 @@ const LocationsPage = () => {
   );
   // A location being created lives here, out of the saved list, until the user submits the
   // form. Otherwise abandoning the form leaves an unfilled default location behind.
+  // A user with nothing saved came here to add their first location, so the form starts
+  // open rather than behind one more button.
   const [newLocationDraft, setNewLocationDraft] =
-    useState<LocationInformation | null>(null);
+    useState<LocationInformation | null>(() =>
+      locationsInfo.length === 0 ? buildNewLocation() : null
+    );
 
   const savedSelectedLocation =
     locationsInfo.find((loc) => loc.id === selectedLocationId) ?? null;
@@ -185,10 +193,7 @@ const LocationsPage = () => {
 
   const onAddNewLocation = () => {
     setSelectedLocationId(null);
-    setNewLocationDraft({
-      ...DEFAULT_NEW_LOCATION,
-      id: `loc-${Date.now()}`, // Simple unique ID
-    });
+    setNewLocationDraft(buildNewLocation());
   };
 
   const onUpdateEditedLocation = (updatedLocation: LocationInformation) => {
@@ -248,10 +253,10 @@ const LocationsPage = () => {
             onDone={onDoneEditing}
           />
         ) : locationsInfo.length === 0 ? (
-          // Nothing saved yet means this is a first visit, so the tutorial goes here
-          // rather than behind the about link the user has no reason to look for
-          <Stack spacing={3} sx={{ alignItems: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ textAlign: "center" }}>
+          // Only reached by backing out of the form, since an empty list opens it; the
+          // home screen is what explains the app to a first-time user
+          <Stack spacing={2} sx={{ alignItems: "center", py: 8 }}>
+            <Typography variant="body1" sx={{ textAlign: "center" }}>
               {t("noLocationsYet")}
             </Typography>
             <Button
@@ -262,7 +267,9 @@ const LocationsPage = () => {
             >
               {t("addLocation")}
             </Button>
-            <Tutorial />
+            <Button component={Link} to="/" size="small">
+              {t("back")}
+            </Button>
           </Stack>
         ) : (
           <>

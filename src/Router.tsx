@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 
 import ObservationsPage from "@/observations/ObservationsPage";
+import HomePage from "@/home/HomePage";
 import INaturalistDataContextProvider from "@/INaturalistDataContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useCurrentTaxa } from "@/hooks/useCurrentTaxa";
@@ -34,15 +35,16 @@ const Router = () => {
   const { currentTaxa, setCurrentTaxa } = useCurrentTaxa();
   const { currentSpeciesPool, setCurrentSpeciesPool } = useCurrentSpeciesPool();
 
-  // Locations page when no location is set yet
+  // Without a location there is nothing to observe, so the landing route is the welcome
+  // screen instead of the observations page
   if (!currentLocation) {
     return (
       <Suspense fallback={<PageFallback />}>
         <Routes>
-          <Route path="/" element={<LocationsPage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/locations" element={<LocationsPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="*" element={<Navigate to="/locations" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     );

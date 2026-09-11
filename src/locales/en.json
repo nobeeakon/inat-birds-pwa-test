@@ -32,6 +32,7 @@
   "group": "Group",
   "hard": "Hard",
   "hideMenu": "Hide menu",
+  "homeAddLocationHint": "To start, add a location.",
   "installApp": "Install App",
   "installHelp.androidChromiumStep1": "Open the browser menu (the ⋮ icon).",
   "installHelp.androidChromiumStep2": "Choose \"Install app\" or \"Add to Home screen\".",

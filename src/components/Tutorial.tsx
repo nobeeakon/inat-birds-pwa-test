@@ -64,10 +64,14 @@ const Screenshot = ({
 
 /**
  * What the app is and how a round goes, in three steps and a before/after pair of the
- * same card. Shown on the about page and, for a user who has not got as far as saving a
- * location, on the locations page they land on.
+ * same card. Shown on the about page and on the home screen, which already says what the
+ * app is above its call to action and so leaves out the description.
  */
-const Tutorial = () => {
+const Tutorial = ({
+  showDescription = true,
+}: {
+  showDescription?: boolean;
+}) => {
   const { t, i18n } = useTranslation();
 
   const language = isLanguage(i18n.language)
@@ -77,14 +81,16 @@ const Tutorial = () => {
 
   return (
     <Stack component="section" spacing={2} sx={{ maxWidth: 560 }}>
-      <Typography variant="body2" color="text.secondary">
-        {t("aboutDescription")}
-      </Typography>
+      {showDescription && (
+        <Typography variant="body2" color="text.secondary">
+          {t("aboutDescription")}
+        </Typography>
+      )}
       <Typography variant="caption" color="text.secondary">
         {t("aboutDataSource")}
       </Typography>
       <Box>
-        <Typography variant="subtitle2" component="h2">
+        <Typography variant="h5" component="h2">
           {t("tutorial.title")}
         </Typography>
         <Stack component="ol" spacing={0.5} sx={{ pl: 3, my: 1 }}>
