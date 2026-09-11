@@ -3,8 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover so the installed app draws under the status bar instead of
+         letting the system pad the page with a band of its own; src/index.css puts the
+         safe-area insets back as padding -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#2f6f4e" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- iOS has no way to tint the status bar: either it reserves an opaque band, which
+         it fills from the page background and so shows up as a white strip above the
+         app bar, or the page draws behind it -->
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>iNat memorama</title>
   </head>

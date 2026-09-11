@@ -27,6 +27,32 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   background-color: inherit;
+
+  /* Installed, the page runs edge to edge (see viewport-fit in index.html), so it owes
+     itself the room the system chrome takes. All four are 0 in a browser tab and on a
+     device without insets. Fixed children — the install button, the update prompt —
+     position against the viewport and so keep their own distance from the edges. */
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+/* The strip behind the status bar, in the app bar's green (palette.primary.main in
+   src/theme.ts) so the system chrome reads as the top of the bar rather than as a gap
+   above the page. Fixed, so it still covers the strip once a page has scrolled its
+   header away, and below MUI's dialogs and snackbars (1300 and up), which are meant to
+   cover the whole screen. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: env(safe-area-inset-top);
+  background-color: #2f6f4e;
+  z-index: 1101;
 }
 
 /* Taxon names link out to iNaturalist from inside otherwise plain text; the default
