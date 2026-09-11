@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ConservationStatus } from "@/conservation";
-import { fetchData } from "@/fetchData";
+import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import { resolveCountryPlaceId } from "@/placeLookup";
 import { sleep, getUrl } from "@/utils";
 import {
@@ -75,11 +75,13 @@ const fetchSpecies = async ({
   lng,
   radius,
   taxa,
+  abortSignal,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
+  abortSignal: AbortSignal;
 }): Promise<FetchSpeciesResult> => {
   const species: SpeciesData[] = [];
   let totalResults = 0;
@@ -101,7 +103,7 @@ const fetchSpecies = async ({
       page,
       perPage: SPECIES_PER_PAGE,
     });
-    const data = await fetchData<ResponseType>(pageUrl);
+    const data = await fetchData<ResponseType>(pageUrl, abortSignal);
 
     totalResults = data.total_results;
 
@@ -145,7 +147,7 @@ export const useFetchSpecies = ({
     // How many species the location has, which can exceed the fetched ones. Null
     // until a fetch lands, or when it came from a cache entry that predates it.
     totalResults: number | null;
-    error: boolean | null;
+    error: FetchErrorKind | null;
     isCachedData: boolean;
   }>({
     loading: false,
@@ -155,10 +157,19 @@ export const useFetchSpecies = ({
     isCachedData: false,
   });
 
+  // Bumped to run the effect again after a failure, without any of the inputs having
+  // to change
+  const [retryToken, setRetryToken] = useState(0);
+  const retry = useCallback(() => setRetryToken((token) => token + 1), []);
+
   useEffect(() => {
     // The fetch is slow enough that the user can change location while it runs; its
     // results must not land on top of whatever is being shown by then
     let isStaleRequest = false;
+    // Abandoned runs are also cut short rather than left to finish quietly: their
+    // remaining pages would otherwise compete with the ones the user is waiting on,
+    // against the same rate limit
+    const abortController = new AbortController();
 
     const fetchPagesData = async () => {
       if (!lat || !lng || !radius) {
@@ -196,10 +207,12 @@ export const useFetchSpecies = ({
           lng,
           radius,
           taxa,
+          abortSignal: abortController.signal,
         });
 
-        // Refill the cache so the next start has a list to show right away. Worth
-        // doing even for a stale request: the data is still valid for its own key.
+        // Refill the cache so the next start has a list to show right away. An
+        // abandoned run never gets here, having been aborted part way through its
+        // pages.
         await writeCachedSpeciesList(
           { locationId, taxa },
           species,
@@ -215,15 +228,14 @@ export const useFetchSpecies = ({
           error: null,
           isCachedData: false,
         });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_error) {
+      } catch (error) {
         if (isStaleRequest) return;
 
         setQueries({
           loading: false,
           data: null,
           totalResults: null,
-          error: true,
+          error: getFetchErrorKind(error),
           isCachedData: false,
         });
       }
@@ -233,8 +245,9 @@ export const useFetchSpecies = ({
 
     return () => {
       isStaleRequest = true;
+      abortController.abort();
     };
-  }, [locationId, lat, lng, radius, taxa, enabled]);
+  }, [locationId, lat, lng, radius, taxa, enabled, retryToken]);
 
-  return queries;
+  return { ...queries, retry };
 };

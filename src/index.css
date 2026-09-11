@@ -43,7 +43,9 @@ body {
    src/theme.ts) so the system chrome reads as the top of the bar rather than as a gap
    above the page. Fixed, so it still covers the strip once a page has scrolled its
    header away, and below MUI's dialogs and snackbars (1300 and up), which are meant to
-   cover the whole screen. */
+   cover the whole screen. Collapses to nothing where the inset is 0, which includes an
+   installed app on Chrome for Android: that one gets its green from the manifest's
+   background_color instead (see vite.config.ts). */
 body::before {
   content: "";
   position: fixed;

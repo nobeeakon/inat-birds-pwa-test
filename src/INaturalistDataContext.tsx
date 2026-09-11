@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import { useLocation as useRouterLocation } from "react-router-dom";
 
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
+import type { FetchErrorKind } from "@/fetchData";
 import {
   useFetchObservations,
   type ObservationType,
@@ -53,7 +54,8 @@ type CategorySelection = {
 
 type ObservationsData = {
   loading: boolean;
-  error: boolean;
+  error: FetchErrorKind | null;
+  retry: () => void; // Runs the failed fetch again
   isCachedData: boolean; // Showing last session's observations until the fetch lands
   observations: ObservationType[];
   currentIndex: number;
@@ -67,7 +69,8 @@ type ObservationsData = {
 
 type SpeciesQueryData = {
   loading: boolean;
-  error: boolean;
+  error: FetchErrorKind | null;
+  retry: () => void; // Runs the failed fetch again
   isCachedData: boolean; // Showing a previous session's list until the fetch lands
   species: SpeciesData[] | null; // null while the fetch is still deferred or in flight
   totalSpeciesCount: number | null; // Species the location has, fetched or not
@@ -178,11 +181,15 @@ const INaturalistDataContextProvider = ({
 
   // The species list is fetched while the user is on the observations page so it
   // (and its cache entry) is ready by the time they navigate to the species page.
-  // It waits for the observations request to settle to avoid competing for the
+  // It waits for the observations request to land to avoid competing for the
   // iNaturalist rate limit, unless the user landed on the species page directly.
-  const observationsSettled =
-    !observationsQuery.loading &&
-    (observationsQuery.data !== null || !!observationsQuery.error);
+  //
+  // A failed request does not open the gate: the usual reason for one is that the
+  // rate limit has run out, and starting the pager then would spend what little is
+  // left on a second refusal — while the user looks at an error screen offering them
+  // a retry that has nothing to spend.
+  const observationsSucceeded =
+    !observationsQuery.loading && observationsQuery.data !== null;
   const isSpeciesRoute = routerLocation.pathname === "/species";
 
   const speciesQuery = useFetchSpecies({
@@ -191,7 +198,7 @@ const INaturalistDataContextProvider = ({
     lng: currentLocation.lng,
     radius: currentLocation.radius,
     taxa: currentTaxa,
-    enabled: observationsSettled || isSpeciesRoute,
+    enabled: observationsSucceeded || isSpeciesRoute,
   });
 
   // The virtualized list only requests the photos of the rows on screen, so the list
@@ -272,7 +279,8 @@ const INaturalistDataContextProvider = ({
   const value: INaturalistDataContextType = {
     observationsData: {
       loading: observationsQuery.loading,
-      error: !!observationsQuery.error,
+      error: observationsQuery.error,
+      retry: observationsQuery.retry,
       isCachedData: observationsQuery.isCachedData,
       observations,
       currentIndex,
@@ -282,7 +290,8 @@ const INaturalistDataContextProvider = ({
     },
     speciesData: {
       loading: speciesQuery.loading,
-      error: !!speciesQuery.error,
+      error: speciesQuery.error,
+      retry: speciesQuery.retry,
       isCachedData: speciesQuery.isCachedData,
       species: speciesQuery.data,
       totalSpeciesCount: speciesQuery.totalResults,

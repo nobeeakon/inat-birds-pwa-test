@@ -30,10 +30,16 @@ export default defineConfig({
         short_name: "iNat memorama",
         description:
           "memorama for species. Data from iNaturalist, the app is for test purpose only",
-        // Kept in step with the palette in src/theme.ts, so the splash screen and the
-        // system chrome around the installed app match the app itself
+        // Both the app bar green (palette.primary.main in src/theme.ts) rather than the
+        // paper background, because Chrome on Android keeps an installed app below the
+        // status bar — viewport-fit=cover is honoured in a tab and ignored in the
+        // WebAPK — so the band behind the clock and battery sits outside the web
+        // viewport where no page CSS can reach it. Android fills that band from
+        // background_color and picks the icon colour from theme_color, so a paper
+        // background_color left white system icons on a near-white strip. Baked into
+        // the WebAPK at install time: changing these needs a reinstall to take effect.
         theme_color: "#2f6f4e",
-        background_color: "#f6f4ef",
+        background_color: "#2f6f4e",
         display: "standalone",
         icons: [
           {

@@ -12,6 +12,7 @@ import {
 import ObservationCard from "@/observations/ObservationCard";
 import Header from "@/observations/Header";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
+import FetchErrorState from "@/components/FetchErrorState";
 import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import { useObservationsData } from "@/INaturalistDataContext";
@@ -46,6 +47,7 @@ const ObservationsPage = ({
   const {
     loading,
     error,
+    retry,
     isCachedData,
     observations,
     currentIndex,
@@ -155,7 +157,7 @@ const ObservationsPage = ({
       >
         {/* The cached observations stand in for the loading screen when there are any */}
         {loading && observations.length === 0 && <LoadingWithNatureFacts />}
-        {error && <Typography>{t("errorOccurred")}</Typography>}
+        {!!error && <FetchErrorState errorKind={error} onRetry={retry} />}
         {/* Reachable through a category pool: its species may have no observations
             nearby, or every one of them may have been excluded */}
         {!loading && !error && observations.length === 0 && (

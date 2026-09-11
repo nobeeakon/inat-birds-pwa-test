@@ -10,6 +10,7 @@ import { useEstablishmentMeansLabel } from "@/establishment";
 import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
+import FetchErrorState from "@/components/FetchErrorState";
 import SpeciesSearchField from "@/species/SpeciesSearchField";
 import { MAX_SPECIES_TO_FETCH } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
@@ -166,7 +167,12 @@ const SpeciesPage = ({
         updateTaxa={updateTaxa}
       />
 
-      {speciesData.error && <div>{t("error")}</div>}
+      {!!speciesData.error && (
+        <FetchErrorState
+          errorKind={speciesData.error}
+          onRetry={speciesData.retry}
+        />
+      )}
       {/* The cached list stands in for the loading screen when there is one. It may
           also still be deferred behind the observations request, which leaves it
           null with nothing loading yet. */}

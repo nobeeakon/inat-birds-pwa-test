@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { fetchData } from "@/fetchData";
+import { useState, useEffect, useCallback } from "react";
+import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import type { ConservationStatus } from "@/conservation";
 import { resolveCountryPlaceId } from "@/placeLookup";
 import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
@@ -144,12 +144,14 @@ const selectSpeciesFromPool = async ({
   radius,
   taxa,
   speciesPool,
+  abortSignal,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
   speciesPool: SpeciesPool;
+  abortSignal: AbortSignal;
 }): Promise<SpeciesToFetch[]> => {
   // Get total results to calculate max pages
   const initialUrl = getUrl({
@@ -164,7 +166,7 @@ const selectSpeciesFromPool = async ({
   const initialData = await fetchData<{
     total_results: number;
     results: SpeciesData[];
-  }>(initialUrl);
+  }>(initialUrl, abortSignal);
 
   const totalPages = Math.ceil(initialData.total_results / PAGE_SIZE);
 
@@ -198,7 +200,10 @@ const selectSpeciesFromPool = async ({
       perPage: PAGE_SIZE,
       page,
     });
-    const data = await fetchData<{ results: SpeciesData[] }>(speciesUrl);
+    const data = await fetchData<{ results: SpeciesData[] }>(
+      speciesUrl,
+      abortSignal
+    );
     speciesData.push(data);
   }
 
@@ -238,9 +243,14 @@ export const useFetchObservations = ({
   const [queries, setQueries] = useState<{
     loading: boolean;
     data: null | ObservationType[];
-    error: boolean | null;
+    error: FetchErrorKind | null;
     isCachedData: boolean;
   }>({ loading: false, data: null, error: null, isCachedData: false });
+
+  // Bumped to run the effect again after a failure, without any of the inputs having
+  // to change
+  const [retryToken, setRetryToken] = useState(0);
+  const retry = useCallback(() => setRetryToken((token) => token + 1), []);
 
   const poolCategoryId = getSpeciesPoolCategoryId(speciesPool);
 
@@ -248,6 +258,10 @@ export const useFetchObservations = ({
     // A fetch takes long enough that the user can change location while it runs; its
     // results must not land on top of whatever is being shown by then
     let isStaleRequest = false;
+    // Abandoned runs are also cut short rather than left to finish quietly: a dozen
+    // requests still to go would otherwise compete with the ones the user is waiting
+    // on, against the same rate limit
+    const abortController = new AbortController();
 
     const fetchPagesData = async () => {
       if (!lat || !lng || !radius) {
@@ -302,6 +316,7 @@ export const useFetchObservations = ({
                 radius,
                 taxa,
                 speciesPool,
+                abortSignal: abortController.signal,
               });
 
         // Stage 2: Fetch observations per species
@@ -324,7 +339,10 @@ export const useFetchObservations = ({
             page: randomPage,
           });
 
-          let obsData = await fetchData<ResponseType>(obsUrl);
+          let obsData = await fetchData<ResponseType>(
+            obsUrl,
+            abortController.signal
+          );
 
           // Fallback: if page is empty (rare species), try page 0
           if (obsData.results.length === 0) {
@@ -338,7 +356,10 @@ export const useFetchObservations = ({
               perPage: 30,
               page: 0,
             });
-            obsData = await fetchData<ResponseType>(fallbackUrl);
+            obsData = await fetchData<ResponseType>(
+              fallbackUrl,
+              abortController.signal
+            );
           }
 
           const observations = obsData.results.filter(
@@ -367,9 +388,9 @@ export const useFetchObservations = ({
           .sort((a, b) => a.sort - b.sort)
           .map(({ obs }) => obs);
 
-        // Refill the cache so the next start has something to show right away. Worth
-        // doing even for a stale request: the data is still valid for its own key.
-        // Only the pools that draw from the location belong in that entry.
+        // Refill the cache so the next start has something to show right away. Only
+        // the pools that draw from the location belong in that entry. An abandoned
+        // run never gets here, having been aborted part way through its species.
         if (poolCategoryId === null) {
           writeCachedObservations({ locationId, taxa }, shuffled);
         }
@@ -382,14 +403,13 @@ export const useFetchObservations = ({
           error: null,
           isCachedData: false,
         });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_error) {
+      } catch (error) {
         if (isStaleRequest) return;
 
         setQueries({
           loading: false,
           data: null,
-          error: true,
+          error: getFetchErrorKind(error),
           isCachedData: false,
         });
       }
@@ -399,6 +419,7 @@ export const useFetchObservations = ({
 
     return () => {
       isStaleRequest = true;
+      abortController.abort();
     };
   }, [
     locationId,
@@ -409,7 +430,8 @@ export const useFetchObservations = ({
     speciesPool,
     poolCategoryId,
     categoryTaxonIds,
+    retryToken,
   ]);
 
-  return queries;
+  return { ...queries, retry };
 };
