@@ -4,10 +4,10 @@ import { Box, Link, Stack, Typography } from "@mui/material";
 import { INATURALIST_SITE_URL } from "@/constants";
 import { FALLBACK_LANGUAGE, isLanguage, type Language } from "@/language";
 
-import screenshotEnHidden from "@/assets/screenshot_en.jpg";
-import screenshotEnRevealed from "@/assets/screenshot_en_show.jpg";
-import screenshotEsHidden from "@/assets/screenshot_es.jpg";
-import screenshotEsRevealed from "@/assets/screenshot_es_show.jpg";
+import screenshotEnHidden from "@/assets/screenshot_en.webp";
+import screenshotEnRevealed from "@/assets/screenshot_en_show.webp";
+import screenshotEsHidden from "@/assets/screenshot_es.webp";
+import screenshotEsRevealed from "@/assets/screenshot_es_show.webp";
 
 // Screenshots of the app itself, so they only teach anything in the language the user
 // is reading the steps in
@@ -17,13 +17,6 @@ const SCREENSHOTS: Record<Language, { hidden: string; revealed: string }> = {
 };
 
 const SCREENSHOT_MAX_WIDTH = 260;
-
-/**
- * Imposed on every screenshot so the pair lines up side by side: they were captured at
- * whatever height their content happened to need, and the interesting part of each one
- * is at the top, so the odd one out gives up some of its photo at the bottom.
- */
-const SCREENSHOT_ASPECT_RATIO = "640 / 910";
 
 const Screenshot = ({
   imageUrl,
@@ -42,11 +35,11 @@ const Screenshot = ({
       src={imageUrl}
       alt={caption}
       loading="lazy"
+      // No cropping: every step of the round is somewhere in the card, and the pair keeps
+      // lining up side by side because both screenshots share their capture size
       sx={{
         width: "100%",
-        aspectRatio: SCREENSHOT_ASPECT_RATIO,
-        objectFit: "cover",
-        objectPosition: "top",
+        height: "auto",
         borderRadius: 1,
         border: 1,
         borderColor: "divider",
