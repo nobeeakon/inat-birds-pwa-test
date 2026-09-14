@@ -5,6 +5,7 @@ import {
   PHOTO_CACHE_NAME,
   PHOTO_URL_PATTERN,
 } from "@/photoCache";
+import { useIsOffline } from "@/onlineStatus";
 import { getCachedPhotoUrl, sleep } from "@/utils";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 
@@ -118,12 +119,21 @@ const prefetchPhotos = async (
 export const useSpeciesPhotoPrefetch = (
   species: SpeciesData[] | null
 ): void => {
+  const isOffline = useIsOffline();
+
   useEffect(() => {
     // Without a service worker in charge of the page there is nothing to cache into,
     // and the photos would be downloaded for nothing: this is a first load, or the
     // dev server, which registers no service worker. The next load has one, and
     // prefetches then.
     if (!species || !navigator.serviceWorker?.controller) {
+      return;
+    }
+
+    // Offline every request here fails, and walking hundreds of them is a few minutes
+    // of nothing. The prefetch starts over when the connection returns, skipping
+    // whatever it already managed to cache.
+    if (isOffline) {
       return;
     }
 
@@ -152,5 +162,5 @@ export const useSpeciesPhotoPrefetch = (
       clearTimeout(startTimeout);
       abortController.abort();
     };
-  }, [species]);
+  }, [species, isOffline]);
 };

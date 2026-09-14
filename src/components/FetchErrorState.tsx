@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Typography,
-} from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { Button, CircularProgress, Typography } from "@mui/material";
 import CloudOffIcon from "@mui/icons-material/CloudOff";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
+import StatusCard from "@/components/StatusCard";
 import type { FetchErrorKind } from "@/fetchData";
 import { getRateLimitCooldownSeconds } from "@/rateLimit";
 
@@ -71,84 +65,44 @@ const FetchErrorState = ({
   const isWaitingToRetry = secondsUntilRetry !== null;
 
   return (
-    <Box
-      sx={{
-        flex: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 2,
-      }}
+    <StatusCard
+      icon={<CloudOffIcon fontSize="medium" />}
+      title={
+        errorKind === "rateLimit"
+          ? t("fetchErrorRateLimitTitle")
+          : t("fetchErrorTitle")
+      }
+      body={
+        errorKind === "rateLimit"
+          ? t("fetchErrorRateLimitBody")
+          : t("fetchErrorBody")
+      }
     >
-      <Paper
-        variant="outlined"
-        sx={{
-          maxWidth: 400,
-          width: "100%",
-          px: 3,
-          py: 4,
-          textAlign: "center",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 1.5,
-        }}
+      <Button
+        variant="contained"
+        size="large"
+        onClick={startRetryCountdown}
+        disabled={isWaitingToRetry}
+        startIcon={
+          isWaitingToRetry ? (
+            <CircularProgress size={18} color="inherit" />
+          ) : (
+            <RefreshIcon />
+          )
+        }
+        sx={{ mt: 1 }}
       >
-        <Box
-          sx={{
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            // Ochre rather than the error red: nothing is broken, the API is just
-            // asking to be left alone for a moment
-            bgcolor: (theme) => alpha(theme.palette.secondary.main, 0.12),
-            color: "secondary.dark",
-          }}
-        >
-          <CloudOffIcon fontSize="medium" />
-        </Box>
+        {isWaitingToRetry
+          ? t("fetchErrorRetryingIn", { count: secondsUntilRetry })
+          : t("retry")}
+      </Button>
 
-        <Typography variant="h6" component="h2">
-          {errorKind === "rateLimit"
-            ? t("fetchErrorRateLimitTitle")
-            : t("fetchErrorTitle")}
+      {isWaitingToRetry && (
+        <Typography variant="caption" color="text.secondary">
+          {t("fetchErrorWaitingHint")}
         </Typography>
-
-        <Typography variant="body2" color="text.secondary">
-          {errorKind === "rateLimit"
-            ? t("fetchErrorRateLimitBody")
-            : t("fetchErrorBody")}
-        </Typography>
-
-        <Button
-          variant="contained"
-          size="large"
-          onClick={startRetryCountdown}
-          disabled={isWaitingToRetry}
-          startIcon={
-            isWaitingToRetry ? (
-              <CircularProgress size={18} color="inherit" />
-            ) : (
-              <RefreshIcon />
-            )
-          }
-          sx={{ mt: 1 }}
-        >
-          {isWaitingToRetry
-            ? t("fetchErrorRetryingIn", { count: secondsUntilRetry })
-            : t("retry")}
-        </Button>
-
-        {isWaitingToRetry && (
-          <Typography variant="caption" color="text.secondary">
-            {t("fetchErrorWaitingHint")}
-          </Typography>
-        )}
-      </Paper>
-    </Box>
+      )}
+    </StatusCard>
   );
 };
 

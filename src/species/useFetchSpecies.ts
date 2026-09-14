@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { ConservationStatus } from "@/conservation";
 import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
+import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
 import { sleep, getUrl } from "@/utils";
 import {
@@ -150,7 +151,9 @@ export const useFetchSpecies = ({
     error: FetchErrorKind | null;
     isCachedData: boolean;
   }>({
-    loading: false,
+    // Reading the cached list is itself a wait, short but asynchronous. Starting at
+    // false would let a page render "nothing here" before the list it has arrives.
+    loading: true,
     data: null,
     totalResults: null,
     error: null,
@@ -161,6 +164,10 @@ export const useFetchSpecies = ({
   // to change
   const [retryToken, setRetryToken] = useState(0);
   const retry = useCallback(() => setRetryToken((token) => token + 1), []);
+
+  // An input like the others, so the fetch is skipped while there is no connection and
+  // starts by itself once there is one again
+  const isOffline = useIsOffline();
 
   useEffect(() => {
     // The fetch is slow enough that the user can change location while it runs; its
@@ -188,6 +195,20 @@ export const useFetchSpecies = ({
       // iNaturalist rate limit, which makes the wait longer still
       const cachedSpecies = await readCachedSpeciesList({ locationId, taxa });
       if (isStaleRequest) return;
+
+      // Offline the cached list is the whole species page, and it is a usable one:
+      // the photos of a list that was browsed before are in the service worker cache.
+      // The effect runs again when the connection comes back.
+      if (isOffline) {
+        setQueries({
+          loading: false,
+          data: cachedSpecies?.species ?? null,
+          totalResults: cachedSpecies?.totalResults ?? null,
+          error: null,
+          isCachedData: !!cachedSpecies,
+        });
+        return;
+      }
 
       setQueries({
         loading: true,
@@ -247,7 +268,7 @@ export const useFetchSpecies = ({
       isStaleRequest = true;
       abortController.abort();
     };
-  }, [locationId, lat, lng, radius, taxa, enabled, retryToken]);
+  }, [locationId, lat, lng, radius, taxa, enabled, isOffline, retryToken]);
 
   return { ...queries, retry };
 };

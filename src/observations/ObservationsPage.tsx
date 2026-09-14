@@ -13,10 +13,12 @@ import ObservationCard from "@/observations/ObservationCard";
 import Header from "@/observations/Header";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import FetchErrorState from "@/components/FetchErrorState";
+import { OfflineBanner, OfflineState } from "@/components/OfflineNotice";
 import type { ObservationStatus } from "@/observations/types";
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
-import { useObservationsData } from "@/INaturalistDataContext";
+import { useObservationsData, useSpeciesData } from "@/INaturalistDataContext";
 import { useImagePreloader } from "@/observations/useImagePreloader";
+import { useIsOffline } from "@/onlineStatus";
 import type { Taxa } from "@/taxa";
 import type { SpeciesPool } from "@/speciesPool";
 import {
@@ -55,6 +57,15 @@ const ObservationsPage = ({
     goToNextObservation,
     markObservationReviewed,
   } = useObservationsData();
+
+  // Read for the offline message only: the species page is the one part of the app that
+  // works without a connection, and only if its list was saved on a previous visit
+  const { species: savedSpecies } = useSpeciesData();
+  const isOffline = useIsOffline();
+  const hasSavedSpeciesList = !!savedSpecies?.length;
+  const offlineMessage = hasSavedSpeciesList
+    ? t("offlineObservationsBodyWithSpecies")
+    : t("offlineObservationsBody");
 
   const speciesInfo = state.status === "success" ? state.data : null;
   // Only what is hidden while browsing this location and taxa: an exclusion made
@@ -155,12 +166,29 @@ const ObservationsPage = ({
           flexDirection: "column",
         }}
       >
+        {/* Offline takes over the whole state: no fetch is running, so neither the
+            loading screen nor the retry of the error screen has anything behind it.
+            The saved observations are still worth browsing, with a line saying why
+            no new ones are arriving. */}
+        {isOffline &&
+          (observations.length > 0 ? (
+            <OfflineBanner message={offlineMessage} />
+          ) : (
+            <OfflineState
+              message={offlineMessage}
+              showSpeciesLink={hasSavedSpeciesList}
+            />
+          ))}
         {/* The cached observations stand in for the loading screen when there are any */}
-        {loading && observations.length === 0 && <LoadingWithNatureFacts />}
-        {!!error && <FetchErrorState errorKind={error} onRetry={retry} />}
+        {!isOffline && loading && observations.length === 0 && (
+          <LoadingWithNatureFacts />
+        )}
+        {!isOffline && !!error && (
+          <FetchErrorState errorKind={error} onRetry={retry} />
+        )}
         {/* Reachable through a category pool: its species may have no observations
             nearby, or every one of them may have been excluded */}
-        {!loading && !error && observations.length === 0 && (
+        {!isOffline && !loading && !error && observations.length === 0 && (
           <Typography sx={{ p: 2 }}>{t("noObservations")}</Typography>
         )}
         {loading && isCachedData && observations.length > 0 && (

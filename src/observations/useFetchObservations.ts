@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import type { ConservationStatus } from "@/conservation";
+import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
 import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
 import {
@@ -252,6 +253,10 @@ export const useFetchObservations = ({
   const [retryToken, setRetryToken] = useState(0);
   const retry = useCallback(() => setRetryToken((token) => token + 1), []);
 
+  // An input like the others, so the fetch is skipped while there is no connection and
+  // starts by itself once there is one again
+  const isOffline = useIsOffline();
+
   const poolCategoryId = getSpeciesPoolCategoryId(speciesPool);
 
   useEffect(() => {
@@ -293,6 +298,19 @@ export const useFetchObservations = ({
         poolCategoryId === null
           ? readCachedObservations({ locationId, taxa })
           : null;
+
+      // Offline the cached observations are all there is. Not left loading: there is
+      // nothing in flight, and nothing will be until the connection comes back, which
+      // re-runs this effect.
+      if (isOffline) {
+        setQueries({
+          loading: false,
+          data: cachedObservations,
+          error: null,
+          isCachedData: !!cachedObservations,
+        });
+        return;
+      }
 
       setQueries({
         loading: true,
@@ -430,6 +448,7 @@ export const useFetchObservations = ({
     speciesPool,
     poolCategoryId,
     categoryTaxonIds,
+    isOffline,
     retryToken,
   ]);
 

@@ -1,8 +1,17 @@
 import { INATURALIST_SITE_URL } from "@/constants";
+import { isOffline } from "@/onlineStatus";
 import { isRateLimitCooldownActive, startRateLimitCooldown } from "@/rateLimit";
 
 /** What went wrong, at the granularity the error screen words its message at. */
 export type FetchErrorKind = "rateLimit" | "generic";
+
+/** Nothing was sent: the browser reports no connection. */
+export class OfflineError extends Error {
+  constructor() {
+    super("The device is offline");
+    this.name = "OfflineError";
+  }
+}
 
 /** An iNaturalist response that came back with a status outside 2xx. */
 export class ApiError extends Error {
@@ -35,6 +44,14 @@ export const fetchData = async <T>(
   URL: string,
   abortSignal?: AbortSignal
 ): Promise<T> => {
+  // The single gate every iNaturalist request passes through, so no stream has to
+  // check the connection for itself. It matters most to the loops: a connection that
+  // drops mid-fetch stops the run on its next request instead of letting it walk the
+  // rest of its species, a second of sleep at a time, failing at each one.
+  if (isOffline()) {
+    throw new OfflineError();
+  }
+
   // Refused here rather than sent: the API has just turned another stream away, and
   // one more request would only make the limit take longer to clear
   if (isRateLimitCooldownActive()) {

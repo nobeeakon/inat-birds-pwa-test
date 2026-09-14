@@ -11,6 +11,8 @@ import { notNullish } from "@/utils";
 import { getFamilyName } from "@/taxonomy";
 import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import FetchErrorState from "@/components/FetchErrorState";
+import { OfflineState } from "@/components/OfflineNotice";
+import { useIsOffline } from "@/onlineStatus";
 import SpeciesSearchField from "@/species/SpeciesSearchField";
 import { MAX_SPECIES_TO_FETCH } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
@@ -33,6 +35,7 @@ const SpeciesPage = ({
     null
   );
 
+  const isOffline = useIsOffline();
   const getEstablishmentMeansLabel = useEstablishmentMeansLabel();
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
@@ -167,16 +170,21 @@ const SpeciesPage = ({
         updateTaxa={updateTaxa}
       />
 
-      {!!speciesData.error && (
+      {!isOffline && !!speciesData.error && (
         <FetchErrorState
           errorKind={speciesData.error}
           onRetry={speciesData.retry}
         />
       )}
+      {/* The saved list is the whole page offline. Without one there is nothing to
+          study and nothing being fetched either, so the loading screen would be a lie. */}
+      {isOffline && !speciesData.loading && speciesData.species === null && (
+        <OfflineState message={t("offlineSpeciesBody")} />
+      )}
       {/* The cached list stands in for the loading screen when there is one. It may
           also still be deferred behind the observations request, which leaves it
           null with nothing loading yet. */}
-      {!speciesData.error && speciesData.species === null && (
+      {!isOffline && !speciesData.error && speciesData.species === null && (
         <LoadingWithNatureFacts />
       )}
       {filteredSpeciesData && (
