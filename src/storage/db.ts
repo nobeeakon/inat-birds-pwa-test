@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
+import type { Language } from "@/language";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
 
@@ -26,8 +27,10 @@ export type CachedSpeciesInfo = {
   timestamp: number;
 };
 
-// The species list of a location, kept to fill the species page while it reloads.
-// Too big for localStorage: a location can have hundreds of species.
+// The species list of a location, kept to fill the species page while it reloads and,
+// while it is still current, to stand in for reloading it at all (see
+// @/species/speciesListCache). Too big for localStorage: a location can have hundreds
+// of species.
 export type CachedSpeciesList = {
   id: string; // Primary key, location and taxa the list belongs to
   locationId: string;
@@ -36,7 +39,18 @@ export type CachedSpeciesList = {
   // How many species the location has in total, which can be more than were
   // fetched. Absent on entries written before it was stored.
   totalResults?: number;
-  timestamp: number;
+  // The rest of what the request was made of. A location keeps its id when it is moved
+  // or its radius edited, so without these an entry could be served for a request it
+  // never answered. Absent, like the language below, on entries written before them.
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  // The language the common names in the list came back in
+  language?: Language;
+  timestamp: number; // When the species were fetched
+  // When the species total was last found to still match, which is what allows a list
+  // to outlive its freshness window without being fetched again
+  verifiedAt?: number;
 };
 
 // Database schema

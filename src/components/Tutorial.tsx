@@ -1,7 +1,7 @@
 import { Trans, useTranslation } from "react-i18next";
 import { Box, Link, Stack, Typography } from "@mui/material";
 
-import { INATURALIST_SITE_URL } from "@/constants";
+import { ANKI_SITE_URL, INATURALIST_SITE_URL } from "@/constants";
 import { FALLBACK_LANGUAGE, isLanguage, type Language } from "@/language";
 
 import screenshotEnHidden from "@/assets/screenshot_en.webp";
@@ -89,6 +89,13 @@ const Tutorial = ({
             inaturalistLink: (
               <Link
                 href={INATURALIST_SITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            ),
+            ankiLink: (
+              <Link
+                href={ANKI_SITE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
               />

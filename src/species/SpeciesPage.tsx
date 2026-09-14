@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/species/Header";
 import VirtualizedSpeciesGrid from "@/species/VirtualizedSpeciesGrid";
@@ -34,6 +34,9 @@ const SpeciesPage = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
+  // The species a card asked to see the similar ones of, which replaces the search and
+  // category filters while it is set
+  const [comparedTaxonId, setComparedTaxonId] = useState<string | null>(null);
 
   const isOffline = useIsOffline();
   const getEstablishmentMeansLabel = useEstablishmentMeansLabel();
@@ -161,6 +164,47 @@ const SpeciesPage = ({
     getEstablishmentMeansLabel,
   ]);
 
+  /**
+   * The compared species and the ones linked to it, or null when no card asked for
+   * that view.
+   *
+   * Null again, rather than a list of one, once the view has nothing left to compare:
+   * the links can be edited from the cards it shows, and a location switch can drop
+   * the compared species from the page altogether.
+   */
+  const comparedSpeciesGroup = useMemo(() => {
+    if (!allSpecies || !comparedTaxonId) {
+      return null;
+    }
+
+    const comparedSpecies = allSpecies.find(
+      (item) => item.taxon.id.toString() === comparedTaxonId
+    );
+    const similarTaxonIds =
+      getSpeciesInfo(comparedTaxonId)?.similarSpeciesIds ?? [];
+
+    if (!comparedSpecies || similarTaxonIds.length === 0) {
+      return null;
+    }
+
+    // The compared species leads, so the photo everything else is being told apart
+    // from is the first of the grid rather than wherever its count puts it
+    const similarSpecies = allSpecies.filter((item) =>
+      similarTaxonIds.includes(item.taxon.id.toString())
+    );
+
+    return [comparedSpecies, ...similarSpecies];
+  }, [allSpecies, comparedTaxonId, getSpeciesInfo]);
+
+  const compareSimilarSpecies = useCallback((taxonId: string) => {
+    setComparedTaxonId(taxonId);
+    // The button that opens this view can be hundreds of cards down the list, which
+    // is well past the handful the view leaves on the page
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const displayedSpecies = comparedSpeciesGroup ?? filteredSpeciesData;
+
   return (
     <>
       <Header
@@ -187,7 +231,7 @@ const SpeciesPage = ({
       {!isOffline && !speciesData.error && speciesData.species === null && (
         <LoadingWithNatureFacts />
       )}
-      {filteredSpeciesData && (
+      {displayedSpecies && (
         <Box component="main" sx={{ px: 2, py: 2 }}>
           {speciesData.loading && speciesData.isCachedData && (
             <Alert
@@ -213,13 +257,26 @@ const SpeciesPage = ({
               {t("species")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {filteredSpeciesData.length} / {speciesData.species?.length || 0}
+              {displayedSpecies.length} / {speciesData.species?.length || 0}
             </Typography>
           </Box>
 
-          <SpeciesSearchField onSearchTermChange={setSearchTerm} />
+          {/* The comparison replaces the filters instead of combining with them: the
+              group is a handful of species, so there is nothing left to search, and a
+              category filter left on could empty a list the user just asked to see */}
+          {comparedSpeciesGroup ? (
+            <Box sx={{ mb: 2 }}>
+              <Chip
+                label={t("similarSpecies")}
+                color="primary"
+                onDelete={() => setComparedTaxonId(null)}
+              />
+            </Box>
+          ) : (
+            <SpeciesSearchField onSearchTermChange={setSearchTerm} />
+          )}
 
-          {categoryFilters.length > 0 && (
+          {!comparedSpeciesGroup && categoryFilters.length > 0 && (
             <Box sx={{ mb: 2 }}>
               <Typography
                 variant="caption"
@@ -252,10 +309,11 @@ const SpeciesPage = ({
           )}
 
           <VirtualizedSpeciesGrid
-            species={filteredSpeciesData}
+            species={displayedSpecies}
             speciesRankByTaxonId={speciesRankByTaxonId}
             currentLocationId={currentLocationId}
             currentTaxa={currentTaxa}
+            onCompareSimilarSpecies={compareSimilarSpecies}
           />
         </Box>
       )}

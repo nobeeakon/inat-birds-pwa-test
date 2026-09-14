@@ -8,12 +8,15 @@
  */
 export const INATURALIST_SITE_URL = "https://www.inaturalist.org";
 
+export const ANKI_SITE_URL = "https://apps.ankiweb.net/";
+
 export const LOCAL_STORAGE_KEY = {
   language: "language",
   resolvedPlaces: "resolved_places",
   currentLocationId: "current_location_id",
   currentTaxa: "current_taxa",
   currentSpeciesPool: "current_species_pool",
+  currentSpeciesPoolLocationId: "current_species_pool_location_id",
   locationsInfo: "locations_info",
   cachedObservations: "cached_observations",
   STORED_URLS_KEY: "stored-urls",

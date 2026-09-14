@@ -31,7 +31,9 @@ const PageFallback = () => (
 const Router = () => {
   const { currentLocation, setCurrentLocationId } = useCurrentLocation();
   const { currentTaxa, setCurrentTaxa } = useCurrentTaxa();
-  const { currentSpeciesPool, setCurrentSpeciesPool } = useCurrentSpeciesPool();
+  const { currentSpeciesPool, setCurrentSpeciesPool } = useCurrentSpeciesPool(
+    currentLocation?.id ?? null
+  );
 
   // Without a location there is nothing to observe, so the landing route is the welcome
   // screen instead of the observations page

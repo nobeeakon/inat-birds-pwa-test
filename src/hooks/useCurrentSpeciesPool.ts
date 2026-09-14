@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 import { LOCAL_STORAGE_KEY } from "@/constants";
 import {
@@ -17,13 +17,37 @@ type UseCurrentSpeciesPoolReturn = {
   setCurrentSpeciesPool: (speciesPool: SpeciesPool) => void;
 };
 
-export const useCurrentSpeciesPool = (): UseCurrentSpeciesPoolReturn => {
-  const [storedSpeciesPool, setCurrentSpeciesPool] =
+/** No location has been picked yet, or the stored pool predates this being kept. */
+const NO_POOL_LOCATION = "";
+
+const isLocationId = (value: unknown): value is string =>
+  typeof value === "string";
+
+/**
+ * The pool the observations are drawn from, kept in localStorage.
+ *
+ * The presets apply everywhere, but a category pool belongs to the location it was
+ * picked at: its species were tagged while browsing that location, and most of them
+ * are not at the next one. So a category is kept across a reload of the same
+ * location and dropped as soon as the user moves to another.
+ */
+export const useCurrentSpeciesPool = (
+  currentLocationId: string | null
+): UseCurrentSpeciesPoolReturn => {
+  const [storedSpeciesPool, setStoredSpeciesPool] =
     usePersistedOption<SpeciesPool>({
       storageKey: LOCAL_STORAGE_KEY.currentSpeciesPool,
       defaultValue: DEFAULT_SPECIES_POOL,
       isValidValue: isSpeciesPool,
     });
+
+  // Which location the stored pool was chosen at. Any string is a valid id, so this
+  // is only read back to compare it against the current one.
+  const [poolLocationId, setPoolLocationId] = usePersistedOption<string>({
+    storageKey: LOCAL_STORAGE_KEY.currentSpeciesPoolLocationId,
+    defaultValue: NO_POOL_LOCATION,
+    isValidValue: isLocationId,
+  });
 
   const categoriesContext = useCategoriesContext();
   const speciesInfoContext = useSpeciesInfoContext();
@@ -53,8 +77,23 @@ export const useCurrentSpeciesPool = (): UseCurrentSpeciesPoolReturn => {
   };
 
   const poolCategoryId = getSpeciesPoolCategoryId(storedSpeciesPool);
+
+  // A category picked elsewhere. Not applied while there is no location: nothing is
+  // being fetched then, and the id to compare against arrives with the locations.
+  const isPoolFromAnotherLocation =
+    currentLocationId !== null && poolLocationId !== currentLocationId;
+
   const shouldFallBack =
-    poolCategoryId !== null && !isCategoryUsable(poolCategoryId);
+    poolCategoryId !== null &&
+    (isPoolFromAnotherLocation || !isCategoryUsable(poolCategoryId));
+
+  const setCurrentSpeciesPool = useCallback(
+    (speciesPool: SpeciesPool) => {
+      setStoredSpeciesPool(speciesPool);
+      setPoolLocationId(currentLocationId ?? NO_POOL_LOCATION);
+    },
+    [setStoredSpeciesPool, setPoolLocationId, currentLocationId]
+  );
 
   // Write the fallback back so the selector and the next session agree with what
   // is being fetched

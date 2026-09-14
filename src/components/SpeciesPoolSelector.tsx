@@ -97,14 +97,9 @@ const SpeciesPoolSelector = ({
         label={t("speciesPool")}
         onChange={(e) => updateSpeciesPool(e.target.value as SpeciesPool)}
       >
-        {PRESET_SPECIES_POOLS.map((presetPool) => (
-          <MenuItem key={presetPool} value={presetPool}>
-            {presetLabels[presetPool]}
-          </MenuItem>
-        ))}
-
-        {categoryOptions.length > 0 && <Divider />}
-
+        {/* The categories come first: they are the pools the user made, and there are
+            few of them, so they are what the menu opens on rather than something to
+            scroll past the presets for */}
         {categoryOptions.map((category) => (
           <MenuItem
             key={category.id}
@@ -119,6 +114,16 @@ const SpeciesPoolSelector = ({
             {t("speciesPoolCategoryUnavailable")}
           </MenuItem>
         )}
+
+        {(categoryOptions.length > 0 || isSelectedCategoryMissing) && (
+          <Divider />
+        )}
+
+        {PRESET_SPECIES_POOLS.map((presetPool) => (
+          <MenuItem key={presetPool} value={presetPool}>
+            {presetLabels[presetPool]}
+          </MenuItem>
+        ))}
       </Select>
     </FormControl>
   );

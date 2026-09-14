@@ -23,11 +23,14 @@ const SpecieCard = ({
   idx,
   currentLocationId,
   currentTaxa,
+  onCompareSimilarSpecies,
 }: {
   data: SpeciesData;
   idx?: number;
   currentLocationId: string;
   currentTaxa: Taxa;
+  /** Must be stable, since the card is memoized. */
+  onCompareSimilarSpecies?: (taxonId: string) => void;
 }) => {
   const { t } = useTranslation();
   const { getSpeciesInfo, updateSpeciesInfo } = useSpeciesInfoContext();
@@ -118,7 +121,10 @@ const SpecieCard = ({
           speciesName={data.taxon.name}
         />
 
-        <SimilarSpecies species={data} />
+        <SimilarSpecies
+          species={data}
+          onCompareSimilarSpecies={onCompareSimilarSpecies}
+        />
       </Box>
     </Box>
   );

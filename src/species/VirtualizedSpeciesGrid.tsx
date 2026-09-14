@@ -56,6 +56,7 @@ const VirtualizedSpeciesGrid = ({
   speciesRankByTaxonId,
   currentLocationId,
   currentTaxa,
+  onCompareSimilarSpecies,
 }: {
   species: SpeciesData[];
   /** Each species' place in the unfiltered list, which is the number its card shows. */
@@ -63,6 +64,8 @@ const VirtualizedSpeciesGrid = ({
   /** The scope an exclusion made from a card applies to. */
   currentLocationId: string;
   currentTaxa: Taxa;
+  /** Must be stable, since the cards are memoized. */
+  onCompareSimilarSpecies?: (taxonId: string) => void;
 }) => {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [listMetrics, setListMetrics] = useState({ offsetTop: 0, width: 0 });
@@ -161,6 +164,7 @@ const VirtualizedSpeciesGrid = ({
                   currentLocationId={currentLocationId}
                   currentTaxa={currentTaxa}
                   idx={speciesRankByTaxonId.get(item.taxon.id)}
+                  onCompareSimilarSpecies={onCompareSimilarSpecies}
                 />
               </Box>
             ))}

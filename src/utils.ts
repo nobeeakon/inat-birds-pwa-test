@@ -45,6 +45,25 @@ const SPECIES_URL = ({
 }) =>
   `https://api.inaturalist.org/v2/observations/species_counts?verifiable=true&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa%5B%5D=${taxa}&${getLocaleQueryParams({ lat, lng })}&page=${page}&per_page=${perPage}&include_ancestors=true&fields=(taxon%3A(ancestor_ids%3A!t%2Cancestors%3A(default_photo%3A(square_url%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t%2Cuuid%3A!t)%2Cancestry%3A!t%2Cconservation_status%3A(status%3A!t%2Cauthority%3A!t)%2Cdefault_photo%3A(attribution%3A!t%2Clicense_code%3A!t%2Cmedium_url%3A!t%2Csquare_url%3A!t%2Curl%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t))`;
 
+/**
+ * How many species a location has and nothing else: one result, only its id, and no
+ * locale, since a count does not depend on the language the names come back in. Asked
+ * for before a cached species list is thrown away, to find out whether it is worth
+ * spending the several paginated requests a fresh one costs.
+ */
+export const getSpeciesTotalUrl = ({
+  lat,
+  lng,
+  radius,
+  taxa,
+}: {
+  lat: number;
+  lng: number;
+  radius: number;
+  taxa: Taxa;
+}) =>
+  `https://api.inaturalist.org/v2/observations/species_counts?verifiable=true&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa%5B%5D=${taxa}&page=1&per_page=1&fields=(taxon%3A(id%3A!t))`;
+
 const OBSERVATIONS_URL = ({
   lat,
   lng,

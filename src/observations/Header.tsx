@@ -3,6 +3,7 @@ import { Button } from "@mui/material";
 
 import AppHeader from "@/components/AppHeader";
 import SpeciesPoolSelector from "@/components/SpeciesPoolSelector";
+import { useSpeciesData } from "@/INaturalistDataContext";
 import type { Taxa } from "@/taxa";
 import type { SpeciesPool } from "@/speciesPool";
 
@@ -31,10 +32,18 @@ const Header = ({
   toggleEditExcludedTaxa: () => void;
 }) => {
   const { t } = useTranslation();
+  const locationSpecies = useSpeciesData().species;
+
+  // How many species the link leads to, which is the list the species page shows. It
+  // is null while the fetch is deferred behind the observations one, so until it lands
+  // the link is its bare label rather than a count of zero.
+  const speciesLinkLabel = locationSpecies
+    ? t("speciesWithCount", { count: locationSpecies.length })
+    : t("species");
 
   return (
     <AppHeader
-      navigateToLabel={t("species")}
+      navigateToLabel={speciesLinkLabel}
       navigateToPath="/species"
       currentLocationId={currentLocationId}
       updateLocation={updateLocation}

@@ -17,6 +17,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import { useTranslation } from "react-i18next";
 
 import { useSpeciesData } from "@/INaturalistDataContext";
@@ -39,7 +40,14 @@ const MAX_VISIBLE_CANDIDATES = 20;
  * because comparing photos is what the picking is about, and only this page shows the
  * whole location side by side.
  */
-const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
+const SimilarSpecies = ({
+  species,
+  onCompareSimilarSpecies,
+}: {
+  species: SpeciesData;
+  /** Narrows the page to this species and the ones linked to it. */
+  onCompareSimilarSpecies?: (taxonId: string) => void;
+}) => {
   const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -122,6 +130,17 @@ const SimilarSpecies = ({ species }: { species: SpeciesData }) => {
         <Button size="small" onClick={() => setIsDialogOpen(true)}>
           {t("similarSpecies")}
         </Button>
+        {/* Reading the names off the chips is not what telling two birds apart takes;
+            this puts the linked species' photos on the page next to this one's */}
+        {similarSpeciesIds.length > 0 && onCompareSimilarSpecies && (
+          <Button
+            size="small"
+            startIcon={<CompareArrowsIcon />}
+            onClick={() => onCompareSimilarSpecies(currentTaxonId)}
+          >
+            {t("compare")}
+          </Button>
+        )}
         {similarSpeciesIds.map((similarTaxonId) => (
           <Chip
             key={similarTaxonId}

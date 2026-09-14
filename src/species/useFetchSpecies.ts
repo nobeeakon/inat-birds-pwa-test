@@ -3,10 +3,13 @@ import type { ConservationStatus } from "@/conservation";
 import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
-import { sleep, getUrl } from "@/utils";
+import { sleep, getUrl, getSpeciesTotalUrl } from "@/utils";
 import {
   readCachedSpeciesList,
   writeCachedSpeciesList,
+  markCachedSpeciesListVerified,
+  type CachedSpeciesListResult,
+  type SpeciesListCacheKey,
 } from "@/species/speciesListCache";
 import type { Taxa } from "@/taxa";
 
@@ -126,6 +129,94 @@ const fetchSpecies = async ({
   };
 };
 
+/** The species total alone, one cheap request instead of the pager's several. */
+const fetchSpeciesTotal = async ({
+  lat,
+  lng,
+  radius,
+  taxa,
+  abortSignal,
+}: {
+  lat: number;
+  lng: number;
+  radius: number;
+  taxa: Taxa;
+  abortSignal: AbortSignal;
+}): Promise<number> => {
+  const data = await fetchData<Pick<ResponseType, "total_results">>(
+    getSpeciesTotalUrl({ lat, lng, radius, taxa }),
+    abortSignal
+  );
+
+  return data.total_results;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How long a cached list is served without asking the API anything at all.
+ *
+ * A location's species list moves over seasons, not days: what changes from one week
+ * to the next is which of them were photographed, not which of them are there. Two
+ * weeks of that against several paginated requests, made every time the app opens, is
+ * a trade worth making — and the requests saved are the same ones the observations
+ * fetch and the photo prefetch are competing for.
+ */
+const FRESH_FOR_MS = 14 * DAY_MS;
+
+/**
+ * Past this a list is fetched again even when the species total still matches. An
+ * unchanged count over months is as easily one species arriving and another going
+ * quiet as it is nothing at all having happened.
+ */
+const REFETCH_AFTER_MS = 90 * DAY_MS;
+
+/** What a cached list is worth, which is what decides how much is requested. */
+type CachedListVerdict =
+  /** Served as the current list; nothing is requested. */
+  | "serve"
+  /** Served if the species total still matches; one request. */
+  | "verify"
+  /** Only fills the page while the whole list is fetched again. */
+  | "refetch";
+
+const judgeCachedList = (
+  cachedList: CachedSpeciesListResult | null,
+  isForcedRefresh: boolean
+): CachedListVerdict => {
+  // A user asking for a refresh is asking past every reason to skip one
+  if (!cachedList || isForcedRefresh) {
+    return "refetch";
+  }
+
+  // Cached for a location that has since been moved or resized, or in another language
+  if (!cachedList.matchesRequest) {
+    return "refetch";
+  }
+
+  // Without the total there is nothing to compare a fresh count against, and no way to
+  // tell a complete entry from one cut short
+  if (cachedList.totalResults === null) {
+    return "refetch";
+  }
+
+  // An entry stored by a run that ended early, or by a build with a lower page limit,
+  // is missing species the location has
+  const expectedSpeciesCount = Math.min(
+    cachedList.totalResults,
+    MAX_SPECIES_TO_FETCH
+  );
+  if (cachedList.species.length < expectedSpeciesCount) {
+    return "refetch";
+  }
+
+  if (cachedList.ageMs >= REFETCH_AFTER_MS) {
+    return "refetch";
+  }
+
+  return cachedList.unverifiedForMs < FRESH_FOR_MS ? "serve" : "verify";
+};
+
 // TODO do as infinite pager
 export const useFetchSpecies = ({
   locationId,
@@ -160,10 +251,28 @@ export const useFetchSpecies = ({
     isCachedData: false,
   });
 
+  // What the request is made of, and so what a cached entry has to have answered
+  const requestKey = `${locationId}-${taxa}-${lat}-${lng}-${radius}`;
+
   // Bumped to run the effect again after a failure, without any of the inputs having
-  // to change
-  const [retryToken, setRetryToken] = useState(0);
-  const retry = useCallback(() => setRetryToken((token) => token + 1), []);
+  // to change. The request it was asked for is kept with it so that the refresh applies
+  // to that one and not to whichever location the user moves on to.
+  const [refreshRequest, setRefreshRequest] = useState({
+    requestKey: "",
+    token: 0,
+  });
+  const retry = useCallback(
+    () =>
+      setRefreshRequest((previous) => ({
+        requestKey,
+        token: previous.token + 1,
+      })),
+    [requestKey]
+  );
+
+  // Asked for by the user, which skips the freshness checks: the cached list is exactly
+  // what they are asking to be rid of
+  const isForcedRefresh = refreshRequest.requestKey === requestKey;
 
   // An input like the others, so the fetch is skipped while there is no connection and
   // starts by itself once there is one again
@@ -178,6 +287,14 @@ export const useFetchSpecies = ({
     // against the same rate limit
     const abortController = new AbortController();
 
+    const cacheKey: SpeciesListCacheKey = {
+      locationId,
+      taxa,
+      lat,
+      lng,
+      radius,
+    };
+
     const fetchPagesData = async () => {
       if (!lat || !lng || !radius) {
         setQueries({
@@ -190,10 +307,11 @@ export const useFetchSpecies = ({
         return;
       }
 
-      // The list from a previous session fills the page while the fetch runs, and
-      // is shown even before it starts: callers defer the fetch to stay under the
-      // iNaturalist rate limit, which makes the wait longer still
-      const cachedSpecies = await readCachedSpeciesList({ locationId, taxa });
+      // The list from a previous session fills the page while the fetch runs, is shown
+      // even before it starts — callers defer the fetch to stay under the iNaturalist
+      // rate limit, which makes the wait longer still — and, when it is recent enough,
+      // saves the fetch from being made at all
+      const cachedSpecies = await readCachedSpeciesList(cacheKey);
       if (isStaleRequest) return;
 
       // Offline the cached list is the whole species page, and it is a usable one:
@@ -210,6 +328,21 @@ export const useFetchSpecies = ({
         return;
       }
 
+      const verdict = judgeCachedList(cachedSpecies, isForcedRefresh);
+
+      // Decided before the `enabled` gate below, so a list that needs nothing fetched
+      // is ready the moment the app opens rather than behind the observations request
+      if (verdict === "serve" && cachedSpecies) {
+        setQueries({
+          loading: false,
+          data: cachedSpecies.species,
+          totalResults: cachedSpecies.totalResults,
+          error: null,
+          isCachedData: true,
+        });
+        return;
+      }
+
       setQueries({
         loading: true,
         data: cachedSpecies?.species ?? null,
@@ -220,6 +353,56 @@ export const useFetchSpecies = ({
 
       if (!enabled) {
         return;
+      }
+
+      // One request to find out whether the several the pager costs would bring back
+      // the list already held. A location whose species total has not moved has not
+      // gained or lost any, which is the part of the list the species page is about:
+      // the per species observation counts do keep creeping up, and are left to go
+      // stale on purpose.
+      if (verdict === "verify" && cachedSpecies) {
+        try {
+          const currentTotal = await fetchSpeciesTotal({
+            lat,
+            lng,
+            radius,
+            taxa,
+            abortSignal: abortController.signal,
+          });
+
+          if (currentTotal === cachedSpecies.totalResults) {
+            await markCachedSpeciesListVerified(cacheKey);
+
+            if (isStaleRequest) return;
+
+            setQueries({
+              loading: false,
+              data: cachedSpecies.species,
+              totalResults: cachedSpecies.totalResults,
+              error: null,
+              isCachedData: true,
+            });
+            return;
+          }
+        } catch (error) {
+          if (isStaleRequest) return;
+
+          // The list in hand is complete and recent enough to have been worth keeping,
+          // so it is served rather than replaced by an error screen. Falling through to
+          // the pager instead would only spend more requests on the same refusal, the
+          // usual reason for one being a rate limit that has run out.
+          console.warn("Could not check the species total:", error);
+          setQueries({
+            loading: false,
+            data: cachedSpecies.species,
+            totalResults: cachedSpecies.totalResults,
+            error: null,
+            isCachedData: true,
+          });
+          return;
+        }
+
+        if (isStaleRequest) return;
       }
 
       try {
@@ -234,11 +417,7 @@ export const useFetchSpecies = ({
         // Refill the cache so the next start has a list to show right away. An
         // abandoned run never gets here, having been aborted part way through its
         // pages.
-        await writeCachedSpeciesList(
-          { locationId, taxa },
-          species,
-          totalResults
-        );
+        await writeCachedSpeciesList(cacheKey, species, totalResults);
 
         if (isStaleRequest) return;
 
@@ -249,6 +428,11 @@ export const useFetchSpecies = ({
           error: null,
           isCachedData: false,
         });
+
+        // The refresh the user asked for has happened. Left set, it would make the next
+        // run of this effect — going offline and back, say — fetch the whole list over
+        // again on the strength of a button pressed long before.
+        setRefreshRequest((previous) => ({ ...previous, requestKey: "" }));
       } catch (error) {
         if (isStaleRequest) return;
 
@@ -268,7 +452,17 @@ export const useFetchSpecies = ({
       isStaleRequest = true;
       abortController.abort();
     };
-  }, [locationId, lat, lng, radius, taxa, enabled, isOffline, retryToken]);
+  }, [
+    locationId,
+    lat,
+    lng,
+    radius,
+    taxa,
+    enabled,
+    isOffline,
+    isForcedRefresh,
+    refreshRequest.token,
+  ]);
 
   return { ...queries, retry };
 };

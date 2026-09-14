@@ -14,6 +14,10 @@ export const PRESET_SPECIES_POOLS = [
   "top20",
   "top50",
   "top100",
+  "top150",
+  "top200",
+  "top300",
+  "top400",
   "all",
 ] as const;
 
@@ -38,11 +42,18 @@ export const FALLBACK_SPECIES_POOL: SpeciesPool = "top50";
  * Number of species each pool draws from; null means the whole species list.
  * Keep these multiples of the observation fetch page size so a pool maps onto a
  * whole number of pages and the label matches what is actually fetched.
+ *
+ * A limit is a cap, not a promise: a location with fewer species than the pool asks
+ * for simply draws from all of them.
  */
 export const SPECIES_POOL_LIMITS: Record<PresetSpeciesPool, number | null> = {
   top20: 20,
   top50: 50,
   top100: 100,
+  top150: 150,
+  top200: 200,
+  top300: 300,
+  top400: 400,
   all: null,
 };
 
@@ -91,5 +102,9 @@ export const usePresetSpeciesPoolLabels = (): Record<
     top20: t("speciesPoolTop20"),
     top50: t("speciesPoolTop50"),
     top100: t("speciesPoolTop100"),
+    top150: t("speciesPoolTop150"),
+    top200: t("speciesPoolTop200"),
+    top300: t("speciesPoolTop300"),
+    top400: t("speciesPoolTop400"),
   };
 };
