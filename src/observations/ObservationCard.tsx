@@ -235,9 +235,6 @@ const ObservationCard = ({
               px: 2,
               py: 1.25,
               backgroundColor: CAPTION_PANEL_COLOR,
-              // The panel is only a shade off the mat it overlaps on a letterboxed
-              // photo, so its edge is drawn rather than left to the colour difference
-              borderTop: "1px solid rgba(22, 58, 40, 0.12)",
               pointerEvents: "none",
             }}
           >
