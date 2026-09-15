@@ -21,14 +21,6 @@ const INK = "#1e2a24";
 const INK_MUTED = "#5c6a63";
 const HAIRLINE = "#e3ded3";
 
-/**
- * Darkens the foot of a photo so a caption can sit on the picture itself rather than in
- * a panel below it — the plate-and-caption layout of a printed guide, and the only way
- * to show the name without spending a phone's scarce vertical space on it.
- */
-const SCRIM_GRADIENT =
-  "linear-gradient(to top, rgba(12, 20, 16, 0.96) 0%, rgba(12, 20, 16, 0.82) 35%, rgba(12, 20, 16, 0.45) 70%, rgba(12, 20, 16, 0) 100%)";
-
 // A serif for headings and scientific names is the one cue that says "field guide"
 // without costing a webfont download
 const SERIF_FONT_STACK = [
@@ -210,5 +202,5 @@ const theme = createTheme({
   },
 });
 
-export { HAIRLINE, INK, SCRIM_GRADIENT };
+export { HAIRLINE, INK };
 export default theme;

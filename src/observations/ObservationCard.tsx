@@ -21,7 +21,6 @@ import { capitalizeFirstLetter } from "@/utils";
 import { type ObservationType } from "@/observations/useFetchObservations";
 import { useTaxonPhotos } from "@/observations/useTaxonPhotos";
 import type { ObservationStatus } from "@/observations/types";
-import { SCRIM_GRADIENT } from "@/theme";
 
 // A shade deeper than the page, so a letterboxed photo reads as mounted on a mat rather
 // than as a picture that failed to fill its box. A dark stage did the same job but was
@@ -30,6 +29,12 @@ import { SCRIM_GRADIENT } from "@/theme";
 // mat than it did on the near-white page. Only just deeper than the page (#f6f4ef): a
 // mat that reads as its own warm band competes with the photo it is there to frame.
 const CARD_MAT_COLOR = "#f1eee6";
+
+// A pale green wash, the light end of the app's palette: ink on a light panel holds its
+// contrast over any photo, where white text on a dark one only did over the dark ones.
+// Nearly opaque for the same reason — the photo shows through as a tint, not as texture
+// behind the words.
+const CAPTION_PANEL_COLOR = "rgba(226, 235, 224, 0.72)";
 
 const DETAIL_SEPARATOR = " · ";
 
@@ -215,7 +220,10 @@ const ObservationCard = ({
         </Stack>
 
         {/* The answer is captioned onto the plate, the way a guide labels an
-            illustration, so revealing it costs the photo no height */}
+            illustration, so revealing it costs the photo no height. One flat
+            translucent green band rather than a gradient: the gradient faded out
+            across the mat of a letterboxed photo and read as a smudge under the
+            picture, where a panel with a top edge reads as a label printed on it. */}
         {showTaxa && (
           <Box
             className="photo-fade-in"
@@ -225,9 +233,11 @@ const ObservationCard = ({
               right: 0,
               bottom: 0,
               px: 2,
-              pt: 4,
-              pb: 1.5,
-              background: SCRIM_GRADIENT,
+              py: 1.25,
+              backgroundColor: CAPTION_PANEL_COLOR,
+              // The panel is only a shade off the mat it overlaps on a letterboxed
+              // photo, so its edge is drawn rather than left to the colour difference
+              borderTop: "1px solid rgba(22, 58, 40, 0.12)",
               pointerEvents: "none",
             }}
           >
@@ -239,24 +249,16 @@ const ObservationCard = ({
                 fontWeight: 600,
                 fontSize: { xs: "1.35rem", sm: "1.5rem" },
                 lineHeight: 1.15,
-                color: "common.white",
+                color: "text.primary",
               }}
             >
-              {/* The one link that keeps its own colour: it sits on the photo scrim, where
-                  the theme's green would disappear, so it underlines in the caption's white */}
+              {/* On a light panel the theme's link colour works, so this one is
+                  styled like every other link in the app */}
               <Link
                 href={`${INATURALIST_SITE_URL}/taxa/${data.taxon.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                color="inherit"
-                sx={{
-                  textDecorationColor: "rgba(255, 255, 255, 0.5)",
-                  "&:hover": {
-                    color: "inherit",
-                    textDecorationColor: "currentcolor",
-                  },
-                  pointerEvents: "auto",
-                }}
+                sx={{ pointerEvents: "auto" }}
               >
                 {data.taxon.name}
               </Link>
@@ -264,7 +266,7 @@ const ObservationCard = ({
             {taxonDetails.length > 0 && (
               <Typography
                 variant="body2"
-                sx={{ color: "rgba(255, 255, 255, 0.82)", lineHeight: 1.3 }}
+                sx={{ color: "text.secondary", lineHeight: 1.3 }}
               >
                 {taxonDetails.join(DETAIL_SEPARATOR)}
               </Typography>
@@ -276,7 +278,6 @@ const ObservationCard = ({
               <SpeciesCategories
                 taxonId={data.taxon.id}
                 speciesName={data.taxon.name}
-                isOnScrim
               />
             </Box>
           </Box>
