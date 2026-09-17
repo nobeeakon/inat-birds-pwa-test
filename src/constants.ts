@@ -25,6 +25,7 @@ export const LOCAL_STORAGE_KEY = {
   IDENTIFIED_OBSERVATIONS_UUIDS_KEY: "identified-observations",
   observations: {
     PREVIOUS_OBSERVATIONS_KEY: "previous-observations",
+    revealedObservationsCount: "observations-revealed-count",
   },
   species: {
     speciesCategories: "species-species-categories",

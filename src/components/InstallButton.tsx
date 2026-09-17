@@ -4,6 +4,7 @@ import { Button } from "@mui/material";
 import InstallMobileIcon from "@mui/icons-material/InstallMobile";
 
 import InstallInstructionsDialog from "@/components/InstallInstructionsDialog";
+import { attentionRingStyles } from "@/components/attentionRing";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -12,8 +13,7 @@ type BeforeInstallPromptEvent = Event & {
 
 // A long cycle with a short ripple at the start: noticeable on arrival, easy to
 // ignore while reading
-const RING_CYCLE_MS = 5200;
-const RING_TRAIL_DELAY_MS = 700;
+const RING_CYCLE_MS = 8000;
 const RING_VISIBLE_FRACTION = 0.2;
 const RING_SPREAD_PX = 11;
 
@@ -104,40 +104,13 @@ const InstallButton = () => {
           right: 16,
           zIndex: 1000,
           boxShadow: 3,
-          // The ring grows past the button's edge, which ButtonBase clips by
-          // default; the touch ripple does its own clipping, so it stays inside
-          overflow: "visible",
-          "&::before, &::after": {
-            content: '""',
-            position: "absolute",
-            inset: 0,
-            borderRadius: "inherit",
-            pointerEvents: "none",
-            // Growing a shadow's spread keeps the ring's rounded corners exact,
-            // and leaves the button itself perfectly still
-            animation: `install-ring ${RING_CYCLE_MS}ms cubic-bezier(0.22, 0.61, 0.36, 1) infinite`,
-          },
-          // A second ring trailing the first reads as one soft ripple
-          "&::after": {
-            animationDelay: `${RING_TRAIL_DELAY_MS}ms`,
-          },
-          "@keyframes install-ring": {
-            "0%": {
-              opacity: 0.5,
-              boxShadow: `0 0 0 0 ${theme.palette.primary.light}`,
-            },
-            // The ripple takes a fifth of the cycle; the rest is a long rest,
-            // so the button asks for attention rather than demanding it
-            [`${RING_VISIBLE_FRACTION * 100}%, 100%`]: {
-              opacity: 0,
-              boxShadow: `0 0 0 ${RING_SPREAD_PX}px ${theme.palette.primary.light}`,
-            },
-          },
-          "@media (prefers-reduced-motion: reduce)": {
-            "&::before, &::after": {
-              animation: "none",
-            },
-          },
+          ...attentionRingStyles({
+            animationName: "install-ring",
+            color: theme.palette.primary.light,
+            cycleMs: RING_CYCLE_MS,
+            visibleFraction: RING_VISIBLE_FRACTION,
+            spreadPx: RING_SPREAD_PX,
+          }),
         })}
       >
         {t("installApp")}

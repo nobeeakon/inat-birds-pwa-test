@@ -14,8 +14,10 @@ import { useTranslation } from "react-i18next";
 
 import SpeciesCategories from "@/components/SpeciesCategories";
 import ExcludeSpeciesButton from "@/components/ExcludeSpeciesButton";
+import { attentionRingStyles } from "@/components/attentionRing";
 import { formatConservationStatus } from "@/conservation";
-import { INATURALIST_SITE_URL } from "@/constants";
+import { INATURALIST_SITE_URL, LOCAL_STORAGE_KEY } from "@/constants";
+import { useStorageState } from "@/storage/storage";
 import { useEstablishmentMeansLabel } from "@/establishment";
 import { capitalizeFirstLetter } from "@/utils";
 import { type ObservationType } from "@/observations/useFetchObservations";
@@ -44,6 +46,21 @@ const PHOTO_STEP_ZONE_WIDTH = 56;
 /** The visible part of that zone: a chip no bigger than the icon needs. */
 const PHOTO_STEP_CHIP_SIZE = 34;
 
+/**
+ * How many reveals the button pulses for. The first rounds are the only ones that
+ * have to teach that the species is hidden until it is pressed; after that a ring
+ * is noise on a button the user already knows.
+ */
+const HINTED_REVEALS = 2;
+
+// Brisker than the install button's ring: this one has a round to be noticed in,
+// not a whole session
+const REVEAL_RING_CYCLE_MS = 2000;
+const REVEAL_RING_VISIBLE_FRACTION = 0.35;
+// Matches the strip's own padding, so a full-width button's ring stops short of the
+// screen edge instead of being clipped by it
+const REVEAL_RING_SPREAD_PX = 8;
+
 const ObservationCard = ({
   data,
   onNext,
@@ -63,6 +80,24 @@ const ObservationCard = ({
   });
   const { t } = useTranslation();
   const getEstablishmentMeansLabel = useEstablishmentMeansLabel();
+
+  // Counted across sessions, and read fresh on every card: this component is keyed
+  // on the observation, so each round remounts it
+  const [revealedObservationsCount, setRevealedObservationsCount] =
+    useStorageState<number>(
+      LOCAL_STORAGE_KEY.observations.revealedObservationsCount,
+      0
+    );
+  const shouldHintReveal = revealedObservationsCount < HINTED_REVEALS;
+
+  const onShowTaxa = () => {
+    setShowTaxa(true);
+
+    // Stops counting once the hint is done, so the number never grows unbounded
+    if (shouldHintReveal) {
+      setRevealedObservationsCount(revealedObservationsCount + 1);
+    }
+  };
 
   // Only once the species is revealed: before that, the pictures the user has to work
   // from are the ones of this sighting
@@ -299,12 +334,12 @@ const ObservationCard = ({
           <Box sx={{ minHeight: 34 }} />
         ) : (
           <Button
-            onClick={() => setShowTaxa(true)}
+            onClick={onShowTaxa}
             fullWidth
             variant="contained"
             // White on the mat, in the green of the app's actions: the one thing to
             // press before rating, so it should not read as quiet text
-            sx={{
+            sx={(theme) => ({
               minHeight: 34,
               backgroundColor: "background.paper",
               color: "primary.dark",
@@ -316,7 +351,17 @@ const ObservationCard = ({
                 borderColor: "primary.light",
                 boxShadow: 2,
               },
-            }}
+              // Only for the first rounds: nothing else on the card says the species
+              // is hidden behind a press
+              ...(shouldHintReveal &&
+                attentionRingStyles({
+                  animationName: "reveal-ring",
+                  color: theme.palette.primary.light,
+                  cycleMs: REVEAL_RING_CYCLE_MS,
+                  visibleFraction: REVEAL_RING_VISIBLE_FRACTION,
+                  spreadPx: REVEAL_RING_SPREAD_PX,
+                })),
+            })}
           >
             {t("show")}
           </Button>
