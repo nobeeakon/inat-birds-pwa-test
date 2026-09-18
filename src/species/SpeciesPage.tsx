@@ -13,6 +13,7 @@ import LoadingWithNatureFacts from "@/observations/LoadingWithNatureFacts";
 import FetchErrorState from "@/components/FetchErrorState";
 import { OfflineState } from "@/components/OfflineNotice";
 import { useIsOffline } from "@/onlineStatus";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 import SpeciesSearchField from "@/species/SpeciesSearchField";
 import { MAX_SPECIES_TO_FETCH } from "@/species/useFetchSpecies";
 import { useSpeciesPhotoPrefetch } from "@/species/useSpeciesPhotoPrefetch";
@@ -321,6 +322,8 @@ const SpeciesPage = ({
             currentTaxa={currentTaxa}
             onCompareSimilarSpecies={compareSimilarSpecies}
           />
+
+          <ScrollToTopButton />
         </Box>
       )}
     </>

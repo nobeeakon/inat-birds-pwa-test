@@ -44,6 +44,14 @@ const PHOTO_OVERLAY_COLOR = "rgba(12, 20, 16, 0.55)";
 // panel is — ink on a light panel holds over any photo, where white text does not.
 const PHOTO_CREDIT_PANEL_COLOR = "rgba(246, 244, 239, 0.82)";
 
+/**
+ * The reveal button's height, which the placeholder that replaces it after the reveal
+ * matches so the rating buttons below stay put. Taller than a default text button: it
+ * is the one target on the card before the rating, and it sits right under the photo's
+ * credit link, which a shallow button crowds.
+ */
+const REVEAL_BUTTON_MIN_HEIGHT = 46;
+
 /** Wide enough for a thumb at the edge of the photo, narrow enough to leave it visible. */
 const PHOTO_STEP_ZONE_WIDTH = 56;
 
@@ -303,8 +311,10 @@ const ObservationCard = ({
               variant="caption"
               sx={{
                 mx: 1,
-                // Tight to the band when it is up, off the photo's edge when it is not
-                mb: showTaxa ? 0.5 : 1,
+                // Tight to the band when it is up, well off the photo's edge when it is
+                // not: below it is the reveal button, and a credit near it reads as part
+                // of the controls rather than as print on the picture
+                mb: showTaxa ? 0.5 : 1.5,
                 width: "fit-content",
                 maxWidth: "calc(100% - 16px)",
                 px: 1,
@@ -388,7 +398,7 @@ const ObservationCard = ({
         sx={{
           flex: "0 0 auto",
           px: 1,
-          pt: 1,
+          pt: 1.5,
           backgroundColor: CARD_MAT_COLOR,
           // Clears the home indicator on a phone without padding every other device
           pb: "max(8px, env(safe-area-inset-bottom))",
@@ -397,7 +407,7 @@ const ObservationCard = ({
         {/* The row keeps its height once the species is revealed, so the rating
             buttons stay under the same thumb instead of jumping up */}
         {showTaxa ? (
-          <Box sx={{ minHeight: 34 }} />
+          <Box sx={{ minHeight: REVEAL_BUTTON_MIN_HEIGHT }} />
         ) : (
           <Button
             onClick={onShowTaxa}
@@ -406,7 +416,8 @@ const ObservationCard = ({
             // White on the mat, in the green of the app's actions: the one thing to
             // press before rating, so it should not read as quiet text
             sx={(theme) => ({
-              minHeight: 34,
+              minHeight: REVEAL_BUTTON_MIN_HEIGHT,
+              py: 1.25,
               backgroundColor: "background.paper",
               color: "primary.dark",
               border: 1,
