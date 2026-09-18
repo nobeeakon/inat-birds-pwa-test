@@ -25,12 +25,18 @@ import type { SpeciesData } from "@/species/useFetchSpecies";
 
 /**
  * Photos requested at a time, followed by a pause. Together with the pause this holds
- * the prefetch to about five photos a second, some 300 kB, which leaves the network to
+ * the prefetch to about six photos a second, some 350 kB, which leaves the network to
  * the photos the user is waiting on: the cards on screen, and the next observation.
- * A full list of 900 photos takes a few minutes to work through at that rate, which is
- * time the user spends browsing anyway.
+ * A full list of 900 photos takes a couple of minutes to work through at that rate,
+ * which is time the user spends browsing anyway.
+ *
+ * It was thirty, which is six times what this comment claimed and a burst of thirty
+ * connections at iNaturalist's photo hosts. They ask that media downloads stay under
+ * 5 GB an hour (https://www.inaturalist.org/pages/api+recommended+practices); a full
+ * list is only some 55 MB, but there is no reason to fetch it at a rate that would
+ * breach that if it ran on.
  */
-const PHOTOS_PER_BATCH = 30;
+const PHOTOS_PER_BATCH = 6;
 
 const PAUSE_BETWEEN_BATCHES_MS = 1000;
 

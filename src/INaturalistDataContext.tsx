@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { useLocation as useRouterLocation } from "react-router-dom";
 
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import type { FetchErrorKind } from "@/fetchData";
@@ -123,7 +122,6 @@ const INaturalistDataContextProvider = ({
   currentSpeciesPool: SpeciesPool;
   children: ReactNode;
 }) => {
-  const routerLocation = useRouterLocation();
   const { getSpeciesInfo, state: speciesInfoState } = useSpeciesInfoContext();
 
   const poolCategoryId = getSpeciesPoolCategoryId(currentSpeciesPool);
@@ -169,6 +167,21 @@ const INaturalistDataContextProvider = ({
     )
   );
 
+  // The species list comes first, because the observations draw picks the species it
+  // fetches sightings of out of it. That order costs nothing: the list is usually
+  // served from its cache without a request at all, and when it is not, its first page
+  // is all the draw needs and arrives while the rest are still on their way.
+  //
+  // It also means the list (and its cache entry) is ready by the time the user
+  // navigates to the species page, which is what the old deferred fetch was for.
+  const speciesQuery = useFetchSpecies({
+    locationId: currentLocation.id,
+    lat: currentLocation.lat,
+    lng: currentLocation.lng,
+    radius: currentLocation.radius,
+    taxa: currentTaxa,
+  });
+
   const observationsQuery = useFetchObservations({
     locationId: currentLocation.id,
     lat: currentLocation.lat,
@@ -177,29 +190,21 @@ const INaturalistDataContextProvider = ({
     taxa: currentTaxa,
     speciesPool: currentSpeciesPool,
     categoryTaxonIds: categorySelection.taxonIds,
+    species: speciesQuery.data,
+    speciesError: speciesQuery.error,
   });
 
-  // The species list is fetched while the user is on the observations page so it
-  // (and its cache entry) is ready by the time they navigate to the species page.
-  // It waits for the observations request to land to avoid competing for the
-  // iNaturalist rate limit, unless the user landed on the species page directly.
-  //
-  // A failed request does not open the gate: the usual reason for one is that the
-  // rate limit has run out, and starting the pager then would spend what little is
-  // left on a second refusal — while the user looks at an error screen offering them
-  // a retry that has nothing to spend.
-  const observationsSucceeded =
-    !observationsQuery.loading && observationsQuery.data !== null;
-  const isSpeciesRoute = routerLocation.pathname === "/species";
-
-  const speciesQuery = useFetchSpecies({
-    locationId: currentLocation.id,
-    lat: currentLocation.lat,
-    lng: currentLocation.lng,
-    radius: currentLocation.radius,
-    taxa: currentTaxa,
-    enabled: observationsSucceeded || isSpeciesRoute,
-  });
+  /**
+   * One retry for what the user sees as one failure.
+   *
+   * The observations page shows the species list's error as its own, so its retry has
+   * to reach the species fetch: retrying the draw alone would find the same missing
+   * list and fail again without having sent anything.
+   */
+  const retryObservations = () => {
+    speciesQuery.retry();
+    observationsQuery.retry();
+  };
 
   // The virtualized list only requests the photos of the rows on screen, so the list
   // is walked here to fill the photo cache for the whole of it
@@ -280,7 +285,7 @@ const INaturalistDataContextProvider = ({
     observationsData: {
       loading: observationsQuery.loading,
       error: observationsQuery.error,
-      retry: observationsQuery.retry,
+      retry: retryObservations,
       isCachedData: observationsQuery.isCachedData,
       observations,
       currentIndex,

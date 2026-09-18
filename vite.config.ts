@@ -60,14 +60,36 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
+            // The species list has its own cache in IndexedDB, which is what decides
+            // when it is refetched (see src/species/speciesListCache.ts). This route
+            // is only a fallback for a reload that races that cache, so it keeps a
+            // handful of entries rather than the seventy it used to: an entry here is
+            // up to five hundred species.
             urlPattern:
               /^https:\/\/api\.inaturalist\.org\/v2\/observations\/species_counts/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "inat-species-cache",
               expiration: {
-                maxEntries: 70,
+                maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 2, // 2 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Which country a set of coordinates falls in, which is a fact rather than
+            // a reading: worth keeping for as long as the user keeps the location.
+            // Answered from here, a saved location costs no lookup at all.
+            urlPattern: /^https:\/\/api\.inaturalist\.org\/v1\/places\/nearby/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "inat-places-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 180, // 6 months
               },
               cacheableResponse: {
                 statuses: [0, 200],

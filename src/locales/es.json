@@ -126,7 +126,6 @@
   "similarSpeciesLocationHint": "Solo se pueden vincular especies registradas en esta ubicación",
   "species": "Especies",
   "speciesListTruncated": "Esta ubicación tiene {{total}} especies: solo se obtuvieron las {{limit}} más observadas",
-  "speciesPhotosError": "Fotos de la especie no disponibles",
   "speciesPool": "Conjunto de especies",
   "speciesPoolAll": "Todas las especies",
   "speciesPoolCategoryUnavailable": "Categoría no disponible",

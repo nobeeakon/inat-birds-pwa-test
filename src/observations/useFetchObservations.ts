@@ -3,7 +3,7 @@ import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import type { ConservationStatus } from "@/conservation";
 import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
-import { getUrl, getObservationsUrlForTaxon, sleep, notNullish } from "@/utils";
+import { getObservationsUrlForTaxon, notNullish } from "@/utils";
 import {
   readCachedObservations,
   writeCachedObservations,
@@ -14,86 +14,86 @@ import { getFamilyName } from "@/taxonomy";
 import { getSpeciesPoolLimit, getSpeciesPoolCategoryId } from "@/speciesPool";
 import type { SpeciesPool } from "@/speciesPool";
 
+export type ObservationPhoto = {
+  id: number;
+  url: string;
+  /** Ready to display, e.g. "(c) someone, some rights reserved (CC BY-NC)". */
+  attribution?: string;
+  /** Null on the photos whose owner reserved every right. */
+  license_code?: string | null;
+};
+
+/**
+ * A photo of another sighting, carrying which one it came from: the credit under it
+ * links to the sighting it belongs to, not to the card it is being shown on.
+ */
+export type SpeciesPhoto = ObservationPhoto & { observationId: number };
+
 export type ObservationType = {
   uuid: string;
+  id: number;
   /**
    * Scientific family name, e.g. "Icteridae".
    *
    * Not part of the API response: the observations endpoint only returns ancestor
-   * ids, so this is copied from the species_counts result that this observation was
-   * fetched for. Absent on observations cached before the field existed.
+   * ids, so this is copied from the species list entry this observation was fetched
+   * for. Absent on observations cached before the field existed.
    */
   family?: string | null;
-  comments_count: number;
-  created_at: string;
-  created_at_details: {
-    date: string;
-    day: number;
-    hour: number;
-    month: number;
-    week: number;
-    year: number;
-  };
-  created_time_zone: string;
-  faves_count: number;
-  geoprivacy?: null | boolean;
-  id: number;
-  identifications: {
-    id: number;
-    current: boolean;
-  }[];
-  identifications_count: number;
-  location: `${number},${number}`;
-  mappable: boolean;
-  obscured: boolean;
-  observed_on: string;
-  observed_on_details: {
-    date: string;
-    day: number;
-    hour: number;
-    month: number;
-    week: number;
-    year: number;
-  };
-  observed_time_zone: string;
-  photos: {
-    id: number;
-    url: string;
-  }[];
-  place_guess: string;
-  quality_grade: string;
-  sounds: [];
+  /**
+   * Other local sightings of the same species, shown once the answer is revealed.
+   *
+   * Not part of the API response either. Each species is fetched a page of sightings
+   * at a time and only a few of them become cards, so the photos of the rest are
+   * already paid for and are of birds from around the user's location — which is what
+   * the curated photos on the taxon record are not, being the same worldwide.
+   */
+  speciesPhotos?: SpeciesPhoto[];
+  photos: ObservationPhoto[];
   taxon: {
     id: number;
+    name: string;
+    preferred_common_name: string;
     conservation_status?: ConservationStatus;
     establishment_means?: {
       establishment_means: string;
     };
-    iconic_taxon_id: number;
-    name: string;
-    preferred_common_name: string;
-    rank: string;
-    rank_level: number;
-  };
-  time_observed_at: string;
-  user: {
-    id: number;
-    icon_url: string;
-    login: string;
   };
 };
 
 type ResponseType = {
-  total_results: number;
-  page: number;
-  per_page: number;
   results: ObservationType[];
 };
 
-const MIN_SLEEP_MS = 1000;
-const PAGE_SIZE = 10;
+/** Species drawn per round. */
 const SPECIES_NUMBER = 15;
-const MAX_HEURISTIC_PAGE = 20; // Heuristic max pages for random selection
+
+/**
+ * Sightings asked for per species, in one request.
+ *
+ * Only the first few become cards; the rest are here for their photos. Fifteen is
+ * about what a species' reveal deck can use — more would be photos nobody pages to.
+ */
+const OBSERVATIONS_PER_SPECIES = 15;
+
+/** Cards made per species, out of the sightings fetched for it. */
+const CARDS_PER_SPECIES = 5;
+
+/** Photos kept per species for the reveal, beyond the card's own. */
+const MAX_SPECIES_PHOTOS = 12;
+
+/**
+ * Added to the location's radius when fetching sightings of a species.
+ *
+ * Being in the species list only means a species has been observed in range, not that
+ * it has been photographed in range by someone whose identification others confirmed —
+ * which is what a card needs. Without the margin the species with few local sightings,
+ * the ones most worth learning, come back with a card or two and a thin reveal deck.
+ *
+ * The photos this widens to are of birds from further away than the user's own patch,
+ * which is the price of having any at all for those species.
+ */
+const OBSERVATION_RADIUS_MARGIN = 250;
 
 const selectRandomNumbers = (size: number, max: number = 100) => {
   const numbers = new Set(Array(max).keys());
@@ -110,113 +110,112 @@ const selectRandomNumbers = (size: number, max: number = 100) => {
   return selectedNumbers;
 };
 
-/** A species to fetch observations for, and what is already known about it. */
+/** A species to fetch sightings for, and what is already known about it. */
 type SpeciesToFetch = {
   taxonId: number;
   family?: string | null;
 };
 
-/**
- * A random draw from the species tagged with a category.
- *
- * No request is needed: the tagged taxon ids are enough to fetch observations, which
- * also means the family name is unknown here and the card leaves it out.
- */
-const selectTaggedSpecies = (categoryTaxonIds: string): SpeciesToFetch[] => {
-  const taggedTaxonIds = categoryTaxonIds
-    .split(",")
-    .filter(Boolean)
-    .map(Number)
-    .filter((taxonId) => !Number.isNaN(taxonId));
+const pickRandom = <T>(items: T[], size: number): T[] =>
+  selectRandomNumbers(Math.min(size, items.length), items.length)
+    .map((index) => items[index])
+    .filter(notNullish);
 
-  return selectRandomNumbers(
-    Math.min(SPECIES_NUMBER, taggedTaxonIds.length),
-    taggedTaxonIds.length
-  )
-    .map((idx) => taggedTaxonIds[idx])
-    .filter(notNullish)
-    .map((taxonId) => ({ taxonId }));
+/**
+ * The species this round draws from, out of the list already fetched for the location.
+ *
+ * No request of its own: the species page's list is what a pool is a slice of. It
+ * arrives most observed first, so a preset pool is its first N entries.
+ */
+const selectSpecies = ({
+  species,
+  speciesPool,
+  categoryTaxonIds,
+}: {
+  species: SpeciesData[];
+  speciesPool: SpeciesPool;
+  categoryTaxonIds: string | null;
+}): SpeciesToFetch[] => {
+  const getFamilyOf = (taxonId: number) =>
+    getFamilyName(
+      species.find((item) => item.taxon.id === taxonId)?.taxon.ancestors
+    );
+
+  // A category pool is a set of taxon ids the user tagged, which can include species
+  // the location's list does not have; those simply come without a family name
+  if (categoryTaxonIds !== null) {
+    const taggedTaxonIds = categoryTaxonIds
+      .split(",")
+      .filter(Boolean)
+      .map(Number)
+      .filter((taxonId) => !Number.isNaN(taxonId));
+
+    return pickRandom(taggedTaxonIds, SPECIES_NUMBER).map((taxonId) => ({
+      taxonId,
+      family: getFamilyOf(taxonId),
+    }));
+  }
+
+  const poolLimit = getSpeciesPoolLimit(speciesPool);
+  const pool = poolLimit ? species.slice(0, poolLimit) : species;
+
+  return pickRandom(pool, SPECIES_NUMBER).map((item) => ({
+    taxonId: item.taxon.id,
+    family: getFamilyName(item.taxon.ancestors),
+  }));
 };
 
-/** A random draw from the species list of the location, capped by the pool. */
-const selectSpeciesFromPool = async ({
+/**
+ * The cards for one species, and the photos its reveal can show.
+ *
+ * One request per species: a single request for all of them at once comes back
+ * distributed by how often each is observed, which leaves the uncommon ones — the very
+ * ones worth learning — with nothing.
+ */
+const fetchObservationsOfSpecies = async ({
+  speciesItem,
   lat,
   lng,
   radius,
   taxa,
-  speciesPool,
   abortSignal,
 }: {
+  speciesItem: SpeciesToFetch;
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
-  speciesPool: SpeciesPool;
   abortSignal: AbortSignal;
-}): Promise<SpeciesToFetch[]> => {
-  // Get total results to calculate max pages
-  const initialUrl = getUrl({
-    type: "species",
-    lat,
-    lng,
-    radius,
-    taxa,
-    perPage: 1,
-    page: 1,
-  });
-  const initialData = await fetchData<{
-    total_results: number;
-    results: SpeciesData[];
-  }>(initialUrl, abortSignal);
-
-  const totalPages = Math.ceil(initialData.total_results / PAGE_SIZE);
-
-  // species_counts is ordered by observation count descending, so capping the
-  // page range to the first N pages restricts the draw to the most common species.
-  const poolLimit = getSpeciesPoolLimit(speciesPool);
-  const pagesInPool = poolLimit
-    ? Math.min(totalPages, Math.ceil(poolLimit / PAGE_SIZE))
-    : totalPages;
-
-  const numberOfPagesToFetch = Math.min(
-    Math.ceil(SPECIES_NUMBER / PAGE_SIZE),
-    pagesInPool
-  );
-  // iNaturalist pages are 1-indexed (page=0 returns page 1), so shift the
-  // zero-based draw up by one to reach every page exactly once.
-  const speciesPages = selectRandomNumbers(
-    numberOfPagesToFetch,
-    pagesInPool
-  ).map((pageIndex) => pageIndex + 1);
-
-  const speciesData: { results: SpeciesData[] }[] = [];
-  for (const page of speciesPages) {
-    await sleep(MIN_SLEEP_MS);
-    const speciesUrl = getUrl({
-      type: "species",
+}): Promise<ObservationType[]> => {
+  const { results } = await fetchData<ResponseType>(
+    getObservationsUrlForTaxon({
       lat,
       lng,
-      radius,
+      radius: radius + OBSERVATION_RADIUS_MARGIN,
       taxa,
-      perPage: PAGE_SIZE,
-      page,
-    });
-    const data = await fetchData<{ results: SpeciesData[] }>(
-      speciesUrl,
-      abortSignal
-    );
-    speciesData.push(data);
-  }
+      taxonId: speciesItem.taxonId,
+      perPage: OBSERVATIONS_PER_SPECIES,
+    }),
+    abortSignal
+  );
 
-  const allSpecies = speciesData.flatMap((d) => d.results).filter(notNullish);
+  // Every sighting fetched contributes its photos, the cards among them included: a
+  // card's own photos are filtered out of its deck where it is rendered, and leaving
+  // them in here means the other cards of this species can still show them.
+  const speciesPhotos: SpeciesPhoto[] = results
+    .flatMap((observation) =>
+      (observation.photos ?? []).map((photo) => ({
+        ...photo,
+        observationId: observation.id,
+      }))
+    )
+    .slice(0, MAX_SPECIES_PHOTOS);
 
-  return selectRandomNumbers(SPECIES_NUMBER, allSpecies.length)
-    .map((idx) => allSpecies[idx])
-    .filter(notNullish)
-    .map((speciesItem) => ({
-      taxonId: speciesItem.taxon.id,
-      family: getFamilyName(speciesItem.taxon.ancestors),
-    }));
+  return pickRandom(results, CARDS_PER_SPECIES).map((observation) => ({
+    ...observation,
+    family: speciesItem.family,
+    speciesPhotos,
+  }));
 };
 
 export const useFetchObservations = ({
@@ -227,6 +226,8 @@ export const useFetchObservations = ({
   taxa,
   speciesPool,
   categoryTaxonIds,
+  species,
+  speciesError,
 }: {
   locationId: string;
   lat: number;
@@ -240,6 +241,14 @@ export const useFetchObservations = ({
    * A string rather than an array so it can be an effect dependency.
    */
   categoryTaxonIds: string | null;
+  /**
+   * The location's species list, which the draw picks from. Null while it is still
+   * being read or fetched, which is what this hook waits on before asking for
+   * anything of its own.
+   */
+  species: SpeciesData[] | null;
+  /** Set when the species list could not be fetched, which leaves nothing to draw from. */
+  speciesError: FetchErrorKind | null;
 }) => {
   const [queries, setQueries] = useState<{
     loading: boolean;
@@ -258,6 +267,11 @@ export const useFetchObservations = ({
   const isOffline = useIsOffline();
 
   const poolCategoryId = getSpeciesPoolCategoryId(speciesPool);
+
+  // The list keeps growing as its pages land, and a draw made from the first page must
+  // not be restarted by the second. So whether there is a list to draw from is the
+  // dependency, not the list itself.
+  const hasSpecies = (species?.length ?? 0) > 0;
 
   useEffect(() => {
     // A fetch takes long enough that the user can change location while it runs; its
@@ -292,8 +306,8 @@ export const useFetchObservations = ({
       }
 
       // Observations kept from a previous session give the user something to look at
-      // for the ~30s the real ones take to arrive. A category pool skips the cache:
-      // its entry holds the species of the location, not the ones of the category.
+      // while the real ones are fetched. A category pool skips the cache: its entry
+      // holds the species of the location, not the ones of the category.
       const cachedObservations =
         poolCategoryId === null
           ? readCachedObservations({ locationId, taxa })
@@ -312,6 +326,19 @@ export const useFetchObservations = ({
         return;
       }
 
+      // Without a species list there is nothing to draw from, so the error the list
+      // failed with is this page's error too — one error screen and one retry for
+      // what the user experiences as one failure
+      if (speciesError) {
+        setQueries({
+          loading: false,
+          data: null,
+          error: speciesError,
+          isCachedData: false,
+        });
+        return;
+      }
+
       setQueries({
         loading: true,
         data: cachedObservations,
@@ -319,92 +346,39 @@ export const useFetchObservations = ({
         isCachedData: !!cachedObservations,
       });
 
+      // The list is on its way. This effect runs again with its first page, which is
+      // all the draw needs.
+      if (!species || !hasSpecies) {
+        return;
+      }
+
       try {
-        // Before the first URL is built, so the species and their observations come
-        // back with the country's common names, endemicity and conservation listings
+        // Before the first URL is built, so the sightings come back with the country's
+        // common names, endemicity and conservation listings
         await resolveCountryPlaceId({ lat, lng });
 
-        // Stage 1: Pick the species to fetch observations for
-        const speciesToFetch =
-          categoryTaxonIds !== null
-            ? selectTaggedSpecies(categoryTaxonIds)
-            : await selectSpeciesFromPool({
-                lat,
-                lng,
-                radius,
-                taxa,
-                speciesPool,
-                abortSignal: abortController.signal,
-              });
+        const speciesToFetch = selectSpecies({
+          species,
+          speciesPool,
+          categoryTaxonIds,
+        });
 
-        // Stage 2: Fetch observations per species
         const allObservations: ObservationType[] = [];
-        const observationRadius = radius + 250; // Increased radius to get more observations per species
 
         for (const speciesItem of speciesToFetch) {
-          await sleep(MIN_SLEEP_MS); // Prevent rate limiting
-
-          // Heuristic: Pick random page from 0 to MAX_HEURISTIC_PAGE
-          const randomPage = Math.floor(Math.random() * MAX_HEURISTIC_PAGE);
-
-          const obsUrl = getObservationsUrlForTaxon({
-            lat,
-            lng,
-            radius: observationRadius,
-            taxa,
-            taxonId: speciesItem.taxonId,
-            perPage: 30,
-            page: randomPage,
-          });
-
-          let obsData = await fetchData<ResponseType>(
-            obsUrl,
-            abortController.signal
-          );
-
-          // Fallback: if page is empty (rare species), try page 0
-          if (obsData.results.length === 0) {
-            await sleep(MIN_SLEEP_MS);
-            const fallbackUrl = getObservationsUrlForTaxon({
+          allObservations.push(
+            ...(await fetchObservationsOfSpecies({
+              speciesItem,
               lat,
               lng,
-              radius: observationRadius,
+              radius,
               taxa,
-              taxonId: speciesItem.taxonId,
-              perPage: 30,
-              page: 0,
-            });
-            obsData = await fetchData<ResponseType>(
-              fallbackUrl,
-              abortController.signal
-            );
-          }
-
-          const observations = obsData.results.filter(
-            (obs) => obs.quality_grade === "research" && obs.photos.length > 0
-          );
-
-          // Select 5 random observations
-          const selectedObs = selectRandomNumbers(
-            Math.min(5, observations.length),
-            observations.length
-          )
-            .map((idx) => observations[idx])
-            .filter(notNullish);
-
-          allObservations.push(
-            ...selectedObs.map((observation) => ({
-              ...observation,
-              family: speciesItem.family,
+              abortSignal: abortController.signal,
             }))
           );
         }
 
-        // Stage 3: Randomize final observations
-        const shuffled = allObservations
-          .map((obs) => ({ obs, sort: Math.random() }))
-          .sort((a, b) => a.sort - b.sort)
-          .map(({ obs }) => obs);
+        const shuffled = pickRandom(allObservations, allObservations.length);
 
         // Refill the cache so the next start has something to show right away. Only
         // the pools that draw from the location belong in that entry. An abandoned
@@ -439,6 +413,7 @@ export const useFetchObservations = ({
       isStaleRequest = true;
       abortController.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     locationId,
     lat,
@@ -450,6 +425,9 @@ export const useFetchObservations = ({
     categoryTaxonIds,
     isOffline,
     retryToken,
+    // `species` itself is deliberately not a dependency, see hasSpecies
+    hasSpecies,
+    speciesError,
   ]);
 
   return { ...queries, retry };

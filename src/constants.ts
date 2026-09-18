@@ -10,6 +10,21 @@ export const INATURALIST_SITE_URL = "https://www.inaturalist.org";
 
 export const ANKI_SITE_URL = "https://apps.ankiweb.net/";
 
+/**
+ * How the app identifies itself to iNaturalist, which asks that requests carry
+ * something it can tell apart from everyone else's
+ * (https://www.inaturalist.org/pages/api+recommended+practices).
+ *
+ * Sent two ways because neither is enough on its own: as a `User-Agent` header, which
+ * is what iNaturalist documents but which browsers refuse to let a page set (it is a
+ * forbidden header name, so this one never leaves the tab — it is here for the sake of
+ * any build of this code that runs outside a browser), and as a query parameter, which
+ * is what actually arrives. Unknown parameters are ignored by the API.
+ */
+export const API_CLIENT_NAME = "inat-memorama";
+
+export const API_CLIENT_QUERY_PARAM = `app_name=${API_CLIENT_NAME}`;
+
 export const LOCAL_STORAGE_KEY = {
   language: "language",
   resolvedPlaces: "resolved_places",

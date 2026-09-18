@@ -1,13 +1,6 @@
 import { useState, type ReactNode } from "react";
 import "@/App.css";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Link,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Link, Stack, Typography } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useTranslation } from "react-i18next";
@@ -20,8 +13,10 @@ import { INATURALIST_SITE_URL, LOCAL_STORAGE_KEY } from "@/constants";
 import { useStorageState } from "@/storage/storage";
 import { useEstablishmentMeansLabel } from "@/establishment";
 import { capitalizeFirstLetter } from "@/utils";
-import { type ObservationType } from "@/observations/useFetchObservations";
-import { useTaxonPhotos } from "@/observations/useTaxonPhotos";
+import {
+  type ObservationPhoto,
+  type ObservationType,
+} from "@/observations/useFetchObservations";
 import type { ObservationStatus } from "@/observations/types";
 
 // A shade deeper than the page, so a letterboxed photo reads as mounted on a mat rather
@@ -40,6 +35,9 @@ const CAPTION_PANEL_COLOR = "rgba(226, 235, 224, 0.72)";
 
 const DETAIL_SEPARATOR = " · ";
 
+/** Behind the small print over a photo, dark enough for white text on any picture. */
+const PHOTO_OVERLAY_COLOR = "rgba(12, 20, 16, 0.55)";
+
 /** Wide enough for a thumb at the edge of the photo, narrow enough to leave it visible. */
 const PHOTO_STEP_ZONE_WIDTH = 56;
 
@@ -53,13 +51,14 @@ const PHOTO_STEP_CHIP_SIZE = 34;
  */
 const HINTED_REVEALS = 2;
 
-// Brisker than the install button's ring: this one has a round to be noticed in,
-// not a whole session
-const REVEAL_RING_CYCLE_MS = 2000;
-const REVEAL_RING_VISIBLE_FRACTION = 0.35;
-// Matches the strip's own padding, so a full-width button's ring stops short of the
-// screen edge instead of being clipped by it
-const REVEAL_RING_SPREAD_PX = 8;
+// Brisker and heavier than the install button's ring: install is an aside that can
+// wait, where this one has a single round to teach the only move on the card
+const REVEAL_RING_CYCLE_MS = 1500;
+const REVEAL_RING_VISIBLE_FRACTION = 0.45;
+// Kept near the strip's own padding, so the ring stays a rim around the button
+// rather than a wash across the mat
+const REVEAL_RING_SPREAD_PX = 9;
+const REVEAL_RING_START_OPACITY = 0.9;
 
 const ObservationCard = ({
   data,
@@ -99,27 +98,31 @@ const ObservationCard = ({
     }
   };
 
-  // Only once the species is revealed: before that, the pictures the user has to work
-  // from are the ones of this sighting
-  const {
-    photos: taxonPhotos,
-    loading: isLoadingTaxonPhotos,
-    error: taxonPhotosError,
-  } = useTaxonPhotos(data.taxon.id, showTaxa);
-
-  const observationPhotos = (data.photos ?? []).map((photo) => ({
+  // Every photo carries the credit for it and the sighting it belongs to: these are
+  // other people's pictures, most of them licensed on the condition that they are
+  // attributed, and some of them reserving every right
+  const toDeckPhoto = (photo: ObservationPhoto, observationId: number) => ({
     id: photo.id,
     imageUrl: photo.url.replace("square", "medium"),
-  }));
+    attribution: photo.attribution,
+    observationId,
+  });
 
-  // The default photo of a species is often one of its observations, so the same
-  // picture can come back from both endpoints
+  const observationPhotos = (data.photos ?? []).map((photo) =>
+    toDeckPhoto(photo, data.id)
+  );
+
+  // Other local sightings of the same species, shown only once the answer is revealed:
+  // before that, the pictures the user has to work from are this sighting's own. They
+  // were fetched together with this one, so there is nothing to wait for.
   const observationPhotoIds = new Set(
     observationPhotos.map((photo) => photo.id)
   );
-  const speciesPhotos = taxonPhotos
-    .filter((photo) => !observationPhotoIds.has(photo.id))
-    .map((photo) => ({ id: photo.id, imageUrl: photo.mediumUrl }));
+  const speciesPhotos = showTaxa
+    ? (data.speciesPhotos ?? [])
+        .filter((photo) => !observationPhotoIds.has(photo.id))
+        .map((photo) => toDeckPhoto(photo, photo.observationId))
+    : [];
 
   const photos = [...observationPhotos, ...speciesPhotos];
 
@@ -130,7 +133,11 @@ const ObservationCard = ({
     Math.max(photos.length - 1, 0)
   );
 
-  const imgUrl = photos.length > 0 ? photos[photoIdx].imageUrl : null;
+  const currentPhoto = photos.length > 0 ? photos[photoIdx] : null;
+  const imgUrl = currentPhoto?.imageUrl ?? null;
+  // A photo whose attribution did not come back is shown uncredited rather than with
+  // an empty label, which is the one case where there is nothing to say
+  const currentPhotoCredit = currentPhoto?.attribution ? currentPhoto : null;
 
   const hasPreviousPhoto = photoIdx > 0;
   const hasNextPhoto = photoIdx < photos.length - 1;
@@ -226,10 +233,7 @@ const ObservationCard = ({
           alignItems="center"
           sx={{ position: "absolute", top: 8, right: 8 }}
         >
-          {isLoadingTaxonPhotos && (
-            <CircularProgress size={14} sx={{ color: "common.white" }} />
-          )}
-          {(taxonPhotosError || showPhotoCounter) && (
+          {showPhotoCounter && (
             <Typography
               variant="caption"
               noWrap
@@ -238,12 +242,10 @@ const ObservationCard = ({
                 py: 0.25,
                 borderRadius: 5,
                 color: "common.white",
-                backgroundColor: "rgba(12, 20, 16, 0.55)",
+                backgroundColor: PHOTO_OVERLAY_COLOR,
               }}
             >
-              {taxonPhotosError
-                ? t("speciesPhotosError")
-                : `${photoIdx + 1}/${photos.length}`}
+              {`${photoIdx + 1}/${photos.length}`}
             </Typography>
           )}
           {/* An excluded species has no observations left to show here, so the button
@@ -253,6 +255,39 @@ const ObservationCard = ({
             onToggleExclusion={onExcludeTaxa}
           />
         </Stack>
+
+        {/* The credit for whoever took the picture, in the corner the answer caption
+            does not use. iNaturalist sends it ready to display, licence and all, and
+            it links to the sighting the photo belongs to — which for the photos of the
+            reveal is not the one on the card. */}
+        {!!currentPhotoCredit && (
+          <Link
+            href={`${INATURALIST_SITE_URL}/observations/${currentPhotoCredit.observationId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            underline="hover"
+            variant="caption"
+            sx={{
+              position: "absolute",
+              bottom: 8,
+              left: 8,
+              maxWidth: "calc(100% - 16px)",
+              px: 1,
+              py: 0.25,
+              borderRadius: 5,
+              color: "common.white",
+              backgroundColor: PHOTO_OVERLAY_COLOR,
+              // One line: a long credit is the photographer's name followed by terms
+              // the link itself leads to in full
+              display: "block",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {currentPhotoCredit.attribution}
+          </Link>
+        )}
 
         {/* The answer is captioned onto the plate, the way a guide labels an
             illustration, so revealing it costs the photo no height. One flat
@@ -356,10 +391,13 @@ const ObservationCard = ({
               ...(shouldHintReveal &&
                 attentionRingStyles({
                   animationName: "reveal-ring",
-                  color: theme.palette.primary.light,
+                  // The full green rather than the light shade: the ring sits on the
+                  // card's mat, which is warm enough to wash the light one out
+                  color: theme.palette.primary.main,
                   cycleMs: REVEAL_RING_CYCLE_MS,
                   visibleFraction: REVEAL_RING_VISIBLE_FRACTION,
                   spreadPx: REVEAL_RING_SPREAD_PX,
+                  startOpacity: REVEAL_RING_START_OPACITY,
                 })),
             })}
           >

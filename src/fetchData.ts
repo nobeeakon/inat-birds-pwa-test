@@ -1,6 +1,11 @@
-import { INATURALIST_SITE_URL } from "@/constants";
+import { API_CLIENT_NAME, API_CLIENT_QUERY_PARAM } from "@/constants";
 import { isOffline } from "@/onlineStatus";
-import { isRateLimitCooldownActive, startRateLimitCooldown } from "@/rateLimit";
+import {
+  acquireRequestSlot,
+  isRateLimitCooldownActive,
+  parseRetryAfterMs,
+  startRateLimitCooldown,
+} from "@/rateLimit";
 
 /** What went wrong, at the granularity the error screen words its message at. */
 export type FetchErrorKind = "rateLimit" | "generic";
@@ -40,6 +45,12 @@ export const getFetchErrorKind = (error: unknown): FetchErrorKind =>
     ? "rateLimit"
     : "generic";
 
+/** Every URL carries the app identifier, wherever in the app it was built. */
+const withClientIdentifier = (url: string): string =>
+  url.includes(API_CLIENT_QUERY_PARAM)
+    ? url
+    : `${url}${url.includes("?") ? "&" : "?"}${API_CLIENT_QUERY_PARAM}`;
+
 export const fetchData = async <T>(
   URL: string,
   abortSignal?: AbortSignal
@@ -58,18 +69,27 @@ export const fetchData = async <T>(
     throw new ApiError(TOO_MANY_REQUESTS, "Too Many Requests (cooling down)");
   }
 
-  const response = await fetch(URL, {
+  // Holds this request to the one a second iNaturalist asks for, counted across every
+  // stream rather than within each. Waiting here rather than in the callers is what
+  // lets them be written as plain loops.
+  await acquireRequestSlot();
+
+  // The wait above can be long enough for another stream to be refused, and for the
+  // cooldown that follows to start. Checked again rather than spent on a request the
+  // API has just said it does not want.
+  if (isRateLimitCooldownActive()) {
+    throw new ApiError(TOO_MANY_REQUESTS, "Too Many Requests (cooling down)");
+  }
+
+  const response = await fetch(withClientIdentifier(URL), {
+    // Unauthenticated on purpose: iNaturalist does not cache responses to
+    // authenticated requests, and nothing here needs anyone's private data
     credentials: "omit",
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:145.0) Gecko/20100101 Firefox/145.0",
-      Accept: "application/json, text/plain, */*",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Sec-Fetch-Dest": "empty",
-      "Sec-Fetch-Mode": "cors",
-      "Sec-Fetch-Site": "same-site",
+      Accept: "application/json",
+      // Dropped by the browser, which sends its own; see API_CLIENT_NAME
+      "User-Agent": API_CLIENT_NAME,
     },
-    referrer: `${INATURALIST_SITE_URL}/`,
     method: "GET",
     mode: "cors",
     signal: abortSignal,
@@ -79,7 +99,10 @@ export const fetchData = async <T>(
   // it, and surfaces much later as a type error that says nothing about the cause
   if (!response.ok) {
     if (isRateLimitStatus(response.status)) {
-      startRateLimitCooldown();
+      // What iNaturalist asked for when it said, rather than this app's own guess
+      startRateLimitCooldown(
+        parseRetryAfterMs(response.headers.get("Retry-After")) ?? undefined
+      );
     }
 
     throw new ApiError(response.status, response.statusText);

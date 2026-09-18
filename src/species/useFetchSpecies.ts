@@ -3,7 +3,8 @@ import type { ConservationStatus } from "@/conservation";
 import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
 import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
-import { sleep, getUrl, getSpeciesTotalUrl } from "@/utils";
+import { getSpeciesUrl, getSpeciesTotalUrl } from "@/utils";
+import type { TaxonAncestor } from "@/taxonomy";
 import {
   readCachedSpeciesList,
   writeCachedSpeciesList,
@@ -14,39 +15,21 @@ import {
 import type { Taxa } from "@/taxa";
 
 type Photo = {
-  id: number;
   square_url: string;
   attribution?: string;
   license_code?: string | null;
-  medium_url?: string;
-  url?: string;
-};
-
-type Taxon = {
-  id: number;
-  default_photo: Photo;
-  iconic_taxon_name: string;
-  is_active: boolean;
-  name: string;
-  preferred_common_name?: string;
-  rank: string;
-  rank_level: number;
 };
 
 export type SpeciesData = {
   count: number;
   taxon: {
     id: number;
-    ancestor_ids: number[];
-    ancestors: Taxon[];
-    ancestry: string;
+    /** Kingdom down to genus, read only for the family name. */
+    ancestors: TaxonAncestor[];
     default_photo: Photo;
-    iconic_taxon_name: string;
-    is_active: boolean;
     name: string;
     preferred_common_name?: string;
     rank: string;
-    rank_level: number;
     establishment_means?: {
       establishment_means: string;
     };
@@ -80,12 +63,20 @@ const fetchSpecies = async ({
   radius,
   taxa,
   abortSignal,
+  onPageLoaded,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
   abortSignal: AbortSignal;
+  /**
+   * The species so far, after each page. The list is published as it arrives rather
+   * than at the end because the first page is already the most observed five hundred
+   * species of the location: enough to fill the species page, and enough for the
+   * observations draw to pick from, both a couple of requests before the run finishes.
+   */
+  onPageLoaded: (species: SpeciesData[], totalResults: number) => void;
 }): Promise<FetchSpeciesResult> => {
   const species: SpeciesData[] = [];
   let totalResults = 0;
@@ -97,9 +88,7 @@ const fetchSpecies = async ({
   const numberOfPages = Math.ceil(MAX_SPECIES_TO_FETCH / SPECIES_PER_PAGE);
 
   for (let page = 1; page <= numberOfPages; page++) {
-    await sleep(1000);
-    const pageUrl = getUrl({
-      type: "species",
+    const pageUrl = getSpeciesUrl({
       lat,
       lng,
       radius,
@@ -116,6 +105,7 @@ const fetchSpecies = async ({
     }
 
     species.push(...data.results);
+    onPageLoaded(species.slice(0, MAX_SPECIES_TO_FETCH), totalResults);
 
     // The location has no further pages to ask for
     if (species.length >= totalResults) {
@@ -217,6 +207,14 @@ const judgeCachedList = (
   return cachedList.unverifiedForMs < FRESH_FOR_MS ? "serve" : "verify";
 };
 
+/**
+ * The species list of a location, from the cache when it still holds and from the API
+ * when it does not.
+ *
+ * It runs on both pages, not only the species one: the observations draw picks the
+ * species it fetches sightings of out of this list, so it is the first thing the app
+ * asks for.
+ */
 // TODO do as infinite pager
 export const useFetchSpecies = ({
   locationId,
@@ -224,16 +222,16 @@ export const useFetchSpecies = ({
   lng,
   radius,
   taxa,
-  enabled = true,
 }: {
   locationId: string;
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
-  enabled?: boolean;
 }) => {
-  const [queries, setQueries] = useState<{
+  type SpeciesQueryState = {
+    /** Which request the list below answers, see the reset under it. */
+    requestKey: string;
     loading: boolean;
     data: null | SpeciesData[];
     // How many species the location has, which can exceed the fetched ones. Null
@@ -241,7 +239,13 @@ export const useFetchSpecies = ({
     totalResults: number | null;
     error: FetchErrorKind | null;
     isCachedData: boolean;
-  }>({
+  };
+
+  // What the request is made of, and so what a cached entry has to have answered
+  const requestKey = `${locationId}-${taxa}-${lat}-${lng}-${radius}`;
+
+  const [queries, setQueries] = useState<SpeciesQueryState>({
+    requestKey,
     // Reading the cached list is itself a wait, short but asynchronous. Starting at
     // false would let a page render "nothing here" before the list it has arrives.
     loading: true,
@@ -251,8 +255,20 @@ export const useFetchSpecies = ({
     isCachedData: false,
   });
 
-  // What the request is made of, and so what a cached entry has to have answered
-  const requestKey = `${locationId}-${taxa}-${lat}-${lng}-${radius}`;
+  // Dropped while rendering rather than in the effect, which only gets to run after
+  // this render has been shown. A list outlives its request by that one frame
+  // otherwise, and the observations draw — which picks the species it fetches out of
+  // this list — would spend a round on the species of the location just left.
+  if (queries.requestKey !== requestKey) {
+    setQueries({
+      requestKey,
+      loading: true,
+      data: null,
+      totalResults: null,
+      error: null,
+      isCachedData: false,
+    });
+  }
 
   // Bumped to run the effect again after a failure, without any of the inputs having
   // to change. The request it was asked for is kept with it so that the refresh applies
@@ -298,6 +314,7 @@ export const useFetchSpecies = ({
     const fetchPagesData = async () => {
       if (!lat || !lng || !radius) {
         setQueries({
+          requestKey,
           loading: false,
           data: null,
           totalResults: null,
@@ -307,10 +324,8 @@ export const useFetchSpecies = ({
         return;
       }
 
-      // The list from a previous session fills the page while the fetch runs, is shown
-      // even before it starts — callers defer the fetch to stay under the iNaturalist
-      // rate limit, which makes the wait longer still — and, when it is recent enough,
-      // saves the fetch from being made at all
+      // The list from a previous session fills the page while the fetch runs and, when
+      // it is recent enough, saves the fetch from being made at all
       const cachedSpecies = await readCachedSpeciesList(cacheKey);
       if (isStaleRequest) return;
 
@@ -319,6 +334,7 @@ export const useFetchSpecies = ({
       // The effect runs again when the connection comes back.
       if (isOffline) {
         setQueries({
+          requestKey,
           loading: false,
           data: cachedSpecies?.species ?? null,
           totalResults: cachedSpecies?.totalResults ?? null,
@@ -330,10 +346,9 @@ export const useFetchSpecies = ({
 
       const verdict = judgeCachedList(cachedSpecies, isForcedRefresh);
 
-      // Decided before the `enabled` gate below, so a list that needs nothing fetched
-      // is ready the moment the app opens rather than behind the observations request
       if (verdict === "serve" && cachedSpecies) {
         setQueries({
+          requestKey,
           loading: false,
           data: cachedSpecies.species,
           totalResults: cachedSpecies.totalResults,
@@ -344,16 +359,13 @@ export const useFetchSpecies = ({
       }
 
       setQueries({
+        requestKey,
         loading: true,
         data: cachedSpecies?.species ?? null,
         totalResults: cachedSpecies?.totalResults ?? null,
         error: null,
         isCachedData: !!cachedSpecies,
       });
-
-      if (!enabled) {
-        return;
-      }
 
       // One request to find out whether the several the pager costs would bring back
       // the list already held. A location whose species total has not moved has not
@@ -376,6 +388,7 @@ export const useFetchSpecies = ({
             if (isStaleRequest) return;
 
             setQueries({
+              requestKey,
               loading: false,
               data: cachedSpecies.species,
               totalResults: cachedSpecies.totalResults,
@@ -393,6 +406,7 @@ export const useFetchSpecies = ({
           // usual reason for one being a rate limit that has run out.
           console.warn("Could not check the species total:", error);
           setQueries({
+            requestKey,
             loading: false,
             data: cachedSpecies.species,
             totalResults: cachedSpecies.totalResults,
@@ -412,6 +426,20 @@ export const useFetchSpecies = ({
           radius,
           taxa,
           abortSignal: abortController.signal,
+          // Each page as it lands, so the species page fills and the observations draw
+          // can start while the remaining pages are still on their way
+          onPageLoaded: (speciesSoFar, total) => {
+            if (isStaleRequest) return;
+
+            setQueries({
+              requestKey,
+              loading: true,
+              data: speciesSoFar,
+              totalResults: total,
+              error: null,
+              isCachedData: false,
+            });
+          },
         });
 
         // Refill the cache so the next start has a list to show right away. An
@@ -422,6 +450,7 @@ export const useFetchSpecies = ({
         if (isStaleRequest) return;
 
         setQueries({
+          requestKey,
           loading: false,
           data: species,
           totalResults,
@@ -437,6 +466,7 @@ export const useFetchSpecies = ({
         if (isStaleRequest) return;
 
         setQueries({
+          requestKey,
           loading: false,
           data: null,
           totalResults: null,
@@ -453,12 +483,15 @@ export const useFetchSpecies = ({
       abortController.abort();
     };
   }, [
+    // The five inputs it is made of are dependencies in their own right, so this one
+    // never fires the effect on its own; it is here because the state updates inside
+    // stamp the list with it
+    requestKey,
     locationId,
     lat,
     lng,
     radius,
     taxa,
-    enabled,
     isOffline,
     isForcedRefresh,
     refreshRequest.token,

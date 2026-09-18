@@ -123,7 +123,6 @@
   "similarSpeciesLocationHint": "Only species recorded at this location can be linked",
   "species": "Species",
   "speciesListTruncated": "This location has {{total}} species: only the {{limit}} most observed ones were retrieved",
-  "speciesPhotosError": "Species photos unavailable",
   "speciesPool": "Species pool",
   "speciesPoolAll": "All species",
   "speciesPoolCategoryUnavailable": "Category unavailable",

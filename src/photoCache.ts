@@ -18,7 +18,14 @@ export const PHOTO_CACHE_NAME = "inat-photos-cache";
  */
 export const PHOTO_CACHE_MAX_ENTRIES = 900;
 
-export const PHOTO_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 2; // 2 days
+/**
+ * A photo URL names one immutable photo — `/photos/<id>/medium.jpg` is that photo and
+ * will never be another — so an entry only expires to make room, never because it
+ * might be out of date. Two days meant every offline user downloading the same 55 MB
+ * again twice a week for nothing, against the media limits iNaturalist asks callers to
+ * respect (https://www.inaturalist.org/pages/api+recommended+practices).
+ */
+export const PHOTO_CACHE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 /**
  * The photos the service worker caches: iNaturalist medium photos, marked with the

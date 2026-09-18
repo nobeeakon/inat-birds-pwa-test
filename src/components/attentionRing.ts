@@ -11,7 +11,11 @@ type AttentionRingOptions = {
   /** Share of the cycle the ripple takes; the rest of it is a rest. */
   visibleFraction: number;
   spreadPx: number;
+  /** How solid the ring is at the start of the beat, before it fades out. */
+  startOpacity?: number;
 };
+
+const DEFAULT_START_OPACITY = 0.5;
 
 /**
  * One ring that grows out of a control's edge and fades, on a cycle that is mostly
@@ -26,6 +30,7 @@ export const attentionRingStyles = ({
   cycleMs,
   visibleFraction,
   spreadPx,
+  startOpacity = DEFAULT_START_OPACITY,
 }: AttentionRingOptions): CSSObject => ({
   // The ring grows past the control's edge, which ButtonBase clips by default; the
   // touch ripple does its own clipping, so it stays inside
@@ -40,7 +45,7 @@ export const attentionRingStyles = ({
   },
   [`@keyframes ${animationName}`]: {
     "0%": {
-      opacity: 0.5,
+      opacity: startOpacity,
       boxShadow: `0 0 0 0 ${color}`,
     },
     [`${visibleFraction * 100}%, 100%`]: {

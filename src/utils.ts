@@ -1,5 +1,5 @@
-import type { Taxa } from "@/taxa";
 import { getLocaleQueryParams } from "@/inaturalistSite";
+import type { Taxa } from "@/taxa";
 
 export const notNullish = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;
@@ -28,22 +28,46 @@ export const getCachedPhotoUrl = (
 ): string | undefined =>
   squareUrl ? `${squareUrl.replace("square", "medium")}?cache=true` : undefined;
 
-const SPECIES_URL = ({
+const API_URL = "https://api.inaturalist.org/v2";
+
+/**
+ * What a species list is made of. iNaturalist only sends the fields asked for, and it
+ * asks that requests fetch no more than they use
+ * (https://www.inaturalist.org/pages/api+recommended+practices), which matters here
+ * more than anywhere else in the app: this is up to 500 species a page, each with its
+ * ancestry, so every field named costs five hundred copies of itself.
+ *
+ * `ancestors` is only ever read by getFamilyName, hence the two fields it needs and no
+ * others. `count` and `uuid` are not listed because the API sends them regardless.
+ */
+const SPECIES_FIELDS = `fields=(taxon:(id:!t,name:!t,preferred_common_name:!t,rank:!t,ancestors:(name:!t,rank:!t),default_photo:(square_url:!t,attribution:!t,license_code:!t),conservation_status:(status:!t,authority:!t),establishment_means:(establishment_means:!t)))`;
+
+/**
+ * What an observation card shows: the photos, the species it is of, and the badges
+ * under the answer. The date, the place, the observer and the counts the API can also
+ * send are left out because nothing on the card displays them.
+ */
+const OBSERVATION_FIELDS = `fields=(id:!t,taxon:(id:!t,name:!t,preferred_common_name:!t,conservation_status:(status:!t,authority:!t),establishment_means:(establishment_means:!t)),photos:(id:!t,url:!t,attribution:!t,license_code:!t))`;
+
+export const getSpeciesUrl = ({
   lat,
   lng,
   radius,
   taxa,
-  perPage = 50,
-  page = 0,
+  perPage,
+  page,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
-  perPage?: number;
-  page?: number;
+  perPage: number;
+  page: number;
 }) =>
-  `https://api.inaturalist.org/v2/observations/species_counts?verifiable=true&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa%5B%5D=${taxa}&${getLocaleQueryParams({ lat, lng })}&page=${page}&per_page=${perPage}&include_ancestors=true&fields=(taxon%3A(ancestor_ids%3A!t%2Cancestors%3A(default_photo%3A(square_url%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t%2Cuuid%3A!t)%2Cancestry%3A!t%2Cconservation_status%3A(status%3A!t%2Cauthority%3A!t)%2Cdefault_photo%3A(attribution%3A!t%2Clicense_code%3A!t%2Cmedium_url%3A!t%2Csquare_url%3A!t%2Curl%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_name%3A!t%2Cid%3A!t%2Cis_active%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t))`;
+  `${API_URL}/observations/species_counts?verifiable=true&spam=false` +
+  `&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa[]=${taxa}` +
+  `&${getLocaleQueryParams({ lat, lng })}` +
+  `&page=${page}&per_page=${perPage}&include_ancestors=true&${SPECIES_FIELDS}`;
 
 /**
  * How many species a location has and nothing else: one result, only its id, and no
@@ -62,77 +86,43 @@ export const getSpeciesTotalUrl = ({
   radius: number;
   taxa: Taxa;
 }) =>
-  `https://api.inaturalist.org/v2/observations/species_counts?verifiable=true&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa%5B%5D=${taxa}&page=1&per_page=1&fields=(taxon%3A(id%3A!t))`;
+  `${API_URL}/observations/species_counts?verifiable=true&spam=false` +
+  `&lat=${lat}&lng=${lng}&radius=${radius}&iconic_taxa[]=${taxa}` +
+  `&page=1&per_page=1&fields=(taxon:(id:!t))`;
 
-const OBSERVATIONS_URL = ({
-  lat,
-  lng,
-  radius,
-  taxa,
-  page = 0,
-}: {
-  lat: number;
-  lng: number;
-  radius: number;
-  taxa: Taxa;
-  page?: number;
-}) =>
-  `https://api.inaturalist.org/v2/observations?verifiable=true&order_by=id&order=desc&page=${page}&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&${getLocaleQueryParams({ lat, lng })}&iconic_taxa%5B%5D=${taxa}&per_page=24&no_total_hits=true&fields=(comments_count%3A!t%2Ccreated_at%3A!t%2Ccreated_at_details%3Aall%2Ccreated_time_zone%3A!t%2Cfaves_count%3A!t%2Cgeoprivacy%3A!t%2Cid%3A!t%2Cidentifications%3A(current%3A!t)%2Cidentifications_count%3A!t%2Clocation%3A!t%2Cmappable%3A!t%2Cobscured%3A!t%2Cobserved_on%3A!t%2Cobserved_on_details%3Aall%2Cobserved_time_zone%3A!t%2Cphotos%3A(id%3A!t%2Curl%3A!t)%2Cplace_guess%3A!t%2Cprivate_geojson%3A!t%2Cquality_grade%3A!t%2Csounds%3A(id%3A!t)%2Cspecies_guess%3A!t%2Ctaxon%3A(conservation_status%3A(status%3A!t%2Cauthority%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_id%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t)%2Ctime_observed_at%3A!t%2Cuser%3A(icon_url%3A!t%2Cid%3A!t%2Clogin%3A!t))`;
-
+/**
+ * A random sample of local sightings of one species, which is both the cards for it
+ * and the photos shown once the answer is revealed.
+ *
+ * `order_by=random` rather than a guessed page number: a random page of a species with
+ * few sightings is usually an empty one, which used to cost a second request to find
+ * out. `quality_grade` and `photos` filter server side, so every record that comes
+ * back is usable and none of the response is spent on ones that are not.
+ *
+ * The same URL is answered from the browser cache for five minutes (the API sends
+ * `max-age=300`), so re-opening the app twice in a row costs nothing and shows the
+ * same birds. Deliberate: a repeat draw is a fair price for the requests it saves.
+ */
 export const getObservationsUrlForTaxon = ({
   lat,
   lng,
   radius,
   taxa,
   taxonId,
-  perPage = 10,
-  page = 0,
+  perPage,
 }: {
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
   taxonId: number;
-  perPage?: number;
-  page?: number;
+  perPage: number;
 }) =>
-  `https://api.inaturalist.org/v2/observations?verifiable=true&order_by=id&order=desc&page=${page}&spam=false&lat=${lat}&lng=${lng}&radius=${radius}&taxon_id=${taxonId}&${getLocaleQueryParams({ lat, lng })}&iconic_taxa%5B%5D=${taxa}&per_page=${perPage}&no_total_hits=true&fields=(comments_count%3A!t%2Ccreated_at%3A!t%2Ccreated_at_details%3Aall%2Ccreated_time_zone%3A!t%2Cfaves_count%3A!t%2Cgeoprivacy%3A!t%2Cid%3A!t%2Cidentifications%3A(current%3A!t)%2Cidentifications_count%3A!t%2Clocation%3A!t%2Cmappable%3A!t%2Cobscured%3A!t%2Cobserved_on%3A!t%2Cobserved_on_details%3Aall%2Cobserved_time_zone%3A!t%2Cphotos%3A(id%3A!t%2Curl%3A!t)%2Cplace_guess%3A!t%2Cprivate_geojson%3A!t%2Cquality_grade%3A!t%2Csounds%3A(id%3A!t)%2Cspecies_guess%3A!t%2Ctaxon%3A(conservation_status%3A(status%3A!t%2Cauthority%3A!t)%2Cestablishment_means%3A(establishment_means%3A!t)%2Ciconic_taxon_id%3A!t%2Cname%3A!t%2Cpreferred_common_name%3A!t%2Cpreferred_common_names%3A(name%3A!t)%2Crank%3A!t%2Crank_level%3A!t)%2Ctime_observed_at%3A!t%2Cuser%3A(icon_url%3A!t%2Cid%3A!t%2Clogin%3A!t))`;
-
-/**
- * The photos iNaturalist keeps on the taxon itself, which are curated pictures of the
- * species rather than of one sighting. Only the photo fields are asked for: the card
- * that shows them already has the taxon details from the observation.
- */
-export const getTaxonPhotosUrl = (taxonId: number) =>
-  `https://api.inaturalist.org/v2/taxa/${taxonId}?${getLocaleQueryParams()}&fields=(taxon_photos%3A(photo%3A(id%3A!t%2Cmedium_url%3A!t%2Curl%3A!t)))`;
-
-// TODO use this one
-export const getUrl = ({
-  type,
-  lat,
-  lng,
-  radius,
-  taxa,
-  perPage,
-  page,
-}: {
-  type: "species" | "observations";
-  lat: number;
-  lng: number;
-  radius: number;
-  taxa: Taxa;
-  perPage?: number;
-  page?: number;
-}) => {
-  if (type === "species") {
-    return SPECIES_URL({ lat, lng, radius, taxa, perPage, page });
-  }
-  if (type === "observations") {
-    return OBSERVATIONS_URL({ lat, lng, radius, taxa, page });
-  }
-
-  return "";
-};
+  `${API_URL}/observations?verifiable=true&spam=false` +
+  `&quality_grade=research&photos=true` +
+  `&lat=${lat}&lng=${lng}&radius=${radius}&taxon_id=${taxonId}` +
+  `&iconic_taxa[]=${taxa}&${getLocaleQueryParams({ lat, lng })}` +
+  `&order_by=random&per_page=${perPage}&no_total_hits=true&${OBSERVATION_FIELDS}`;
 
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
