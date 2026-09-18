@@ -20,10 +20,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // "prompt" instead of "autoUpdate": the new worker waits until the user
-      // accepts the reload offered by src/components/UpdatePrompt.tsx, so an
-      // update never interrupts a game in progress.
-      registerType: "prompt",
+      // "autoUpdate" rather than "prompt": the new worker takes over and the page
+      // reloads on its own, with nothing to click. A prompt cannot be made
+      // reliable here because the worker below answers every navigation from its
+      // own precached index.html, so a page still controlled by the old worker is
+      // served the old build no matter how often it reloads. Accepting a prompt
+      // therefore looked like a no-op whenever the handover did not land.
+      registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
         name: "iNat memorama",
@@ -58,6 +61,12 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         // Drop precaches from previous builds so old bundles are not kept around
         cleanupOutdatedCaches: true,
+        // vite-plugin-pwa already sets both of these for registerType "autoUpdate",
+        // but the handover is the whole feature: skipWaiting so a new worker does not
+        // sit idle behind the old one, clientsClaim so it controls this page straight
+        // away instead of waiting for the next navigation.
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             // The species list has its own cache in IndexedDB, which is what decides

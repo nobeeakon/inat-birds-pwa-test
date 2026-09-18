@@ -7,7 +7,7 @@ import LocationsContextProvider from "./LocationsContext";
 import { ThemeProvider } from "@mui/material/styles";
 
 import InstallButton from "@/components/InstallButton";
-import UpdatePrompt from "@/components/UpdatePrompt";
+import { useServiceWorkerUpdate } from "@/hooks/useServiceWorkerUpdate";
 import Router from "./Router";
 
 import "./App.css";
@@ -15,6 +15,8 @@ import "./App.css";
 const BASE_URL = import.meta.env.BASE_URL;
 
 const AppWrapper = () => {
+  useServiceWorkerUpdate();
+
   return (
     <ThemeProvider theme={theme}>
       <LanguageContextProvider>
@@ -24,7 +26,6 @@ const AppWrapper = () => {
               <BrowserRouter basename={BASE_URL}>
                 <Router />
                 <InstallButton />
-                <UpdatePrompt />
               </BrowserRouter>
             </SpeciesInfoContextProvider>
           </CategoriesContextProvider>

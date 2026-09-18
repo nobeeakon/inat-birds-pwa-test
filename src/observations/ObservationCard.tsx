@@ -66,6 +66,13 @@ const REVEAL_RING_VISIBLE_FRACTION = 0.45;
 const REVEAL_RING_SPREAD_PX = 9;
 const REVEAL_RING_START_OPACITY = 0.9;
 
+/**
+ * Licences that reserve nothing. iNaturalist still sends a credit line for these
+ * photos, but showing them owes their owner nothing, so the tag stays off the plate
+ * and the picture keeps that corner.
+ */
+const NO_RIGHTS_RESERVED_LICENSE_CODES = new Set(["cc0", "pd"]);
+
 const ObservationCard = ({
   data,
   onNext,
@@ -111,6 +118,7 @@ const ObservationCard = ({
     id: photo.id,
     imageUrl: photo.url.replace("square", "medium"),
     attribution: photo.attribution,
+    licenseCode: photo.license_code,
     observationId,
   });
 
@@ -142,8 +150,15 @@ const ObservationCard = ({
   const currentPhoto = photos.length > 0 ? photos[photoIdx] : null;
   const imgUrl = currentPhoto?.imageUrl ?? null;
   // A photo whose attribution did not come back is shown uncredited rather than with
-  // an empty label, which is the one case where there is nothing to say
-  const currentPhotoCredit = currentPhoto?.attribution ? currentPhoto : null;
+  // an empty label, which is the one case where there is nothing to say. A public
+  // domain photo is uncredited too: its credit is a courtesy no licence asks for.
+  const isCurrentPhotoPublicDomain = NO_RIGHTS_RESERVED_LICENSE_CODES.has(
+    currentPhoto?.licenseCode?.toLowerCase() ?? ""
+  );
+  const currentPhotoCredit =
+    currentPhoto?.attribution && !isCurrentPhotoPublicDomain
+      ? currentPhoto
+      : null;
 
   const hasPreviousPhoto = photoIdx > 0;
   const hasNextPhoto = photoIdx < photos.length - 1;
