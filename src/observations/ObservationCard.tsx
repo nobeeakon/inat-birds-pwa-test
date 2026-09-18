@@ -277,102 +277,109 @@ const ObservationCard = ({
           />
         </Stack>
 
-        {/* The credit for whoever took the picture. iNaturalist sends it ready to
-            display, licence and all, and it links to the sighting the photo belongs
-            to — which for the photos of the reveal is not the one on the card.
-
-            Top left, not bottom: the answer caption is a full width band along the
-            bottom edge, so a credit down there sits under it and shows through the
-            band's translucency as a smudge rather than as a line of print. */}
-        {!!currentPhotoCredit && (
-          <Link
-            href={`${INATURALIST_SITE_URL}/observations/${currentPhotoCredit.observationId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            underline="hover"
-            variant="caption"
-            sx={{
-              position: "absolute",
-              top: 8,
-              left: 8,
-              // Short of the counter and the exclude button in the opposite corner
-              maxWidth: "55%",
-              px: 1,
-              py: 0.25,
-              borderRadius: 5,
-              backgroundColor: PHOTO_CREDIT_PANEL_COLOR,
-              // One line: a long credit is the photographer's name followed by terms
-              // the link itself leads to in full
-              display: "block",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {currentPhotoCredit.attribution}
-          </Link>
-        )}
-
-        {/* The answer is captioned onto the plate, the way a guide labels an
-            illustration, so revealing it costs the photo no height. One flat
-            translucent green band rather than a gradient: the gradient faded out
-            across the mat of a letterboxed photo and read as a smudge under the
-            picture, where a panel with a top edge reads as a label printed on it. */}
-        {showTaxa && (
-          <Box
-            className="photo-fade-in"
-            sx={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              px: 2,
-              py: 1.25,
-              backgroundColor: CAPTION_PANEL_COLOR,
-              pointerEvents: "none",
-            }}
-          >
-            <Typography
-              component="p"
+        {/* Credit and answer are stacked along the bottom edge rather than placed
+            independently: the answer band is full width, so a credit pinned to the
+            bottom on its own would end up behind it and show through its translucency
+            as a smudge. In one stack the credit rides directly above the band. */}
+        <Box
+          sx={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // The strips down the edges of the photo keep their full height under it
+            pointerEvents: "none",
+          }}
+        >
+          {/* The credit for whoever took the picture. iNaturalist sends it ready to
+              display, licence and all, and it links to the sighting the photo belongs
+              to — which for the photos of the reveal is not the one on the card. */}
+          {!!currentPhotoCredit && (
+            <Link
+              href={`${INATURALIST_SITE_URL}/observations/${currentPhotoCredit.observationId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              underline="hover"
+              variant="caption"
               sx={{
-                fontFamily: (theme) => theme.typography.h6.fontFamily,
-                fontStyle: "italic",
-                fontWeight: 600,
-                fontSize: { xs: "1.35rem", sm: "1.5rem" },
-                lineHeight: 1.15,
-                color: "text.primary",
+                mx: 1,
+                // Tight to the band when it is up, off the photo's edge when it is not
+                mb: showTaxa ? 0.5 : 1,
+                width: "fit-content",
+                maxWidth: "calc(100% - 16px)",
+                px: 1,
+                py: 0.25,
+                borderRadius: 5,
+                backgroundColor: PHOTO_CREDIT_PANEL_COLOR,
+                pointerEvents: "auto",
+                // One line: a long credit is the photographer's name followed by terms
+                // the link itself leads to in full
+                display: "block",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              {/* On a light panel the theme's link colour works, so this one is
-                  styled like every other link in the app */}
-              <Link
-                href={`${INATURALIST_SITE_URL}/taxa/${data.taxon.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ pointerEvents: "auto" }}
-              >
-                {data.taxon.name}
-              </Link>
-            </Typography>
-            {taxonDetails.length > 0 && (
+              {currentPhotoCredit.attribution}
+            </Link>
+          )}
+
+          {/* The answer is captioned onto the plate, the way a guide labels an
+              illustration, so revealing it costs the photo no height. One flat
+              translucent green band rather than a gradient: the gradient faded out
+              across the mat of a letterboxed photo and read as a smudge under the
+              picture, where a panel with a top edge reads as a label printed on it. */}
+          {showTaxa && (
+            <Box
+              className="photo-fade-in"
+              sx={{
+                px: 2,
+                py: 1.25,
+                backgroundColor: CAPTION_PANEL_COLOR,
+              }}
+            >
               <Typography
-                variant="body2"
-                sx={{ color: "text.secondary", lineHeight: 1.3 }}
+                component="p"
+                sx={{
+                  fontFamily: (theme) => theme.typography.h6.fontFamily,
+                  fontStyle: "italic",
+                  fontWeight: 600,
+                  fontSize: { xs: "1.35rem", sm: "1.5rem" },
+                  lineHeight: 1.15,
+                  color: "text.primary",
+                }}
               >
-                {taxonDetails.join(DETAIL_SEPARATOR)}
+                {/* On a light panel the theme's link colour works, so this one is
+                  styled like every other link in the app */}
+                <Link
+                  href={`${INATURALIST_SITE_URL}/taxa/${data.taxon.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ pointerEvents: "auto" }}
+                >
+                  {data.taxon.name}
+                </Link>
               </Typography>
-            )}
-            {/* Part of the caption rather than of the control strip below: the
+              {taxonDetails.length > 0 && (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", lineHeight: 1.3 }}
+                >
+                  {taxonDetails.join(DETAIL_SEPARATOR)}
+                </Typography>
+              )}
+              {/* Part of the caption rather than of the control strip below: the
                 categories label this species, and in the strip they only looked
                 like whatever had taken the place of the reveal button */}
-            <Box sx={{ pointerEvents: "auto" }}>
-              <SpeciesCategories
-                taxonId={data.taxon.id}
-                speciesName={data.taxon.name}
-              />
+              <Box sx={{ pointerEvents: "auto" }}>
+                <SpeciesCategories
+                  taxonId={data.taxon.id}
+                  speciesName={data.taxon.name}
+                />
+              </Box>
             </Box>
-          </Box>
-        )}
+          )}
+        </Box>
       </Box>
 
       {/* One control strip, sized to its content and carrying the photo's mat colour
