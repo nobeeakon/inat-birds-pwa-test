@@ -38,6 +38,12 @@ const DETAIL_SEPARATOR = " · ";
 /** Behind the small print over a photo, dark enough for white text on any picture. */
 const PHOTO_OVERLAY_COLOR = "rgba(12, 20, 16, 0.55)";
 
+// The page's own paper, for the photo credit. A dark chip put it in the same register
+// as the answer panel it sits near, and the two read as one overlay; paper reads as a
+// slip of print laid on the picture instead. Light for the same reason the caption
+// panel is — ink on a light panel holds over any photo, where white text does not.
+const PHOTO_CREDIT_PANEL_COLOR = "rgba(246, 244, 239, 0.82)";
+
 /** Wide enough for a thumb at the edge of the photo, narrow enough to leave it visible. */
 const PHOTO_STEP_ZONE_WIDTH = 56;
 
@@ -256,10 +262,13 @@ const ObservationCard = ({
           />
         </Stack>
 
-        {/* The credit for whoever took the picture, in the corner the answer caption
-            does not use. iNaturalist sends it ready to display, licence and all, and
-            it links to the sighting the photo belongs to — which for the photos of the
-            reveal is not the one on the card. */}
+        {/* The credit for whoever took the picture. iNaturalist sends it ready to
+            display, licence and all, and it links to the sighting the photo belongs
+            to — which for the photos of the reveal is not the one on the card.
+
+            Top left, not bottom: the answer caption is a full width band along the
+            bottom edge, so a credit down there sits under it and shows through the
+            band's translucency as a smudge rather than as a line of print. */}
         {!!currentPhotoCredit && (
           <Link
             href={`${INATURALIST_SITE_URL}/observations/${currentPhotoCredit.observationId}`}
@@ -269,14 +278,14 @@ const ObservationCard = ({
             variant="caption"
             sx={{
               position: "absolute",
-              bottom: 8,
+              top: 8,
               left: 8,
-              maxWidth: "calc(100% - 16px)",
+              // Short of the counter and the exclude button in the opposite corner
+              maxWidth: "55%",
               px: 1,
               py: 0.25,
               borderRadius: 5,
-              color: "common.white",
-              backgroundColor: PHOTO_OVERLAY_COLOR,
+              backgroundColor: PHOTO_CREDIT_PANEL_COLOR,
               // One line: a long credit is the photographer's name followed by terms
               // the link itself leads to in full
               display: "block",
