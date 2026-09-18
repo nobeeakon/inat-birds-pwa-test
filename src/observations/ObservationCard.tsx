@@ -13,11 +13,11 @@ import { INATURALIST_SITE_URL, LOCAL_STORAGE_KEY } from "@/constants";
 import { useStorageState } from "@/storage/storage";
 import { useEstablishmentMeansLabel } from "@/establishment";
 import { capitalizeFirstLetter } from "@/utils";
-import {
-  type ObservationPhoto,
-  type ObservationType,
-} from "@/observations/useFetchObservations";
-import type { ObservationStatus } from "@/observations/types";
+import type {
+  ObservationPhoto,
+  ObservationStatus,
+  ObservationType,
+} from "@/observations/types";
 
 // A shade deeper than the page, so a letterboxed photo reads as mounted on a mat rather
 // than as a picture that failed to fill its box. A dark stage did the same job but was

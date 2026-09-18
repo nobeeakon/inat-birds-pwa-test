@@ -9,6 +9,25 @@ export const getRandomIndex = (length: number) =>
   Math.floor(Math.random() * length);
 
 /**
+ * A random sample of `size` distinct items, or all of them when there are fewer.
+ *
+ * Partial Fisher-Yates over a copy: only the first `size` positions are settled, so
+ * drawing fifteen species out of a list of fifteen hundred costs fifteen swaps rather
+ * than a shuffle of the whole thing.
+ */
+export const pickRandom = <T>(items: T[], size: number): T[] => {
+  const pool = [...items];
+  const sampleSize = Math.min(size, pool.length);
+
+  for (let position = 0; position < sampleSize; position++) {
+    const pickedIndex = position + getRandomIndex(pool.length - position);
+    [pool[position], pool[pickedIndex]] = [pool[pickedIndex], pool[position]];
+  }
+
+  return pool.slice(0, sampleSize);
+};
+
+/**
  * Common names come back however the contributor typed them, so one list mixes
  * "Garambullo" with "garambullo". Only the first letter is touched: the rest carries
  * names such as "pico de oro" or "halcón de Harris" that would be wrong in title case.

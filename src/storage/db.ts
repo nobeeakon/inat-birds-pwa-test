@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
 import type { Language } from "@/language";
+import type { ObservationType } from "@/observations/types";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
 
@@ -51,6 +52,58 @@ export type CachedSpeciesList = {
   // When the species total was last found to still match, which is what allows a list
   // to outlive its freshness window without being fetched again
   verifiedAt?: number;
+  // When the list was last read for a location the user was actually on, which is what
+  // decides whether it survives the prune (see @/storage/pruneCaches). Absent on
+  // entries written before it existed, which makes them the first to go.
+  lastUsedAt?: number;
+};
+
+// The sightings kept for one species, so a later round can show it again without
+// fetching it a second time (see @/observations/deck).
+export type DeckEntry = {
+  taxonId: number;
+  // Copied from the species list entry the species was drawn from: the observations
+  // endpoint only returns ancestor ids, so it cannot be read back off a sighting
+  family?: string | null;
+  // Every sighting the request brought back, not only the few that became cards. The
+  // rest are what the reveal deck is built from, and what lets a reused species show a
+  // different set of cards each round.
+  observations: ObservationType[];
+  fetchedAt: number;
+};
+
+// A location's deck: the species it has already fetched sightings for. Keyed by
+// location and taxa like the species list is, with the rest of the request kept as
+// fields so that moving or resizing a location overwrites its deck rather than
+// leaving one behind that nothing will read again.
+export type CachedDeck = {
+  id: string; // Primary key, location and taxa the deck belongs to
+  locationId: string;
+  taxa: Taxa;
+  lat: number;
+  lng: number;
+  radius: number;
+  // The language the common names on the sightings came back in
+  language: Language;
+  entries: DeckEntry[];
+  // When a round last drew from this deck, which is what decides whether it survives
+  // the prune (see @/storage/pruneCaches)
+  lastUsedAt: number;
+};
+
+/**
+ * How a species has gone for the user, across every session and every location.
+ *
+ * Kept apart from the decks because it is the user's own record rather than fetched
+ * data: it is what the reinforcement half of a round is chosen from, and it is never
+ * pruned. One small row per species ever seen.
+ */
+export type SpeciesReview = {
+  taxonId: number; // Primary key
+  seen: number;
+  unidentified: number;
+  sortOfIdentified: number;
+  lastSeenAt: number;
 };
 
 // Database schema
@@ -70,6 +123,16 @@ interface BirdsDB extends DBSchema {
     value: CachedSpeciesList;
   };
 
+  decks: {
+    key: string; // id
+    value: CachedDeck;
+  };
+
+  speciesReviews: {
+    key: number; // taxonId
+    value: SpeciesReview;
+  };
+
   speciesNotes: {
     // Old store name for migration
     key: string; // id
@@ -83,7 +146,7 @@ let dbInstance: IDBPDatabase<BirdsDB> | null = null;
 
 async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
   if (!dbInstance) {
-    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 4, {
+    dbInstance = await openDB<BirdsDB>("BirdsInatDB", 5, {
       async upgrade(db, oldVersion, _newVersion, transaction) {
         // Version 1: Create initial speciesNotes store
         if (oldVersion < 1) {
@@ -156,6 +219,18 @@ async function getDB(): Promise<IDBPDatabase<BirdsDB>> {
             cursor = await cursor.continue();
           }
         }
+
+        // Version 5: the decks a round is assembled from, and the per species record
+        // its reinforcement half is chosen out of
+        if (oldVersion < 5) {
+          if (!db.objectStoreNames.contains("decks")) {
+            db.createObjectStore("decks", { keyPath: "id" });
+          }
+
+          if (!db.objectStoreNames.contains("speciesReviews")) {
+            db.createObjectStore("speciesReviews", { keyPath: "taxonId" });
+          }
+        }
       },
     });
   }
@@ -198,6 +273,40 @@ export const speciesListsStore = {
   delete: async (id: string): Promise<void> => {
     const db = await getDB();
     await db.delete("speciesLists", id);
+  },
+};
+
+export const decksStore = {
+  set: async (deck: CachedDeck): Promise<void> => {
+    const db = await getDB();
+    await db.put("decks", deck);
+  },
+  get: async (id: string): Promise<CachedDeck | undefined> => {
+    const db = await getDB();
+    return await db.get("decks", id);
+  },
+  getAll: async (): Promise<CachedDeck[]> => {
+    const db = await getDB();
+    return await db.getAll("decks");
+  },
+  delete: async (id: string): Promise<void> => {
+    const db = await getDB();
+    await db.delete("decks", id);
+  },
+};
+
+export const speciesReviewsStore = {
+  set: async (review: SpeciesReview): Promise<void> => {
+    const db = await getDB();
+    await db.put("speciesReviews", review);
+  },
+  get: async (taxonId: number): Promise<SpeciesReview | undefined> => {
+    const db = await getDB();
+    return await db.get("speciesReviews", taxonId);
+  },
+  getAll: async (): Promise<SpeciesReview[]> => {
+    const db = await getDB();
+    return await db.getAll("speciesReviews");
   },
 };
 

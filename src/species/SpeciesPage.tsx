@@ -15,6 +15,7 @@ import { OfflineState } from "@/components/OfflineNotice";
 import { useIsOffline } from "@/onlineStatus";
 import SpeciesSearchField from "@/species/SpeciesSearchField";
 import { MAX_SPECIES_TO_FETCH } from "@/species/useFetchSpecies";
+import { useSpeciesPhotoPrefetch } from "@/species/useSpeciesPhotoPrefetch";
 import type { Taxa } from "@/taxa";
 // TODO use a different photo, selected from the observations
 
@@ -47,6 +48,11 @@ const SpeciesPage = ({
   const { getCategory } = categoriesContext;
   const { getSpeciesInfo } = speciesInfoContext;
   const allSpecies = speciesData.species;
+
+  // The grid is virtualized, so only the rows near the viewport ever request a photo.
+  // Walking the list here is what fills the offline cache with the rest of it, and it
+  // happens from this page so that nobody who never opens it pays for the download.
+  useSpeciesPhotoPrefetch(allSpecies);
 
   // The search field commits its term here once typing pauses; deferring it on top of
   // that keeps the filtering render, which walks hundreds of species, from blocking a

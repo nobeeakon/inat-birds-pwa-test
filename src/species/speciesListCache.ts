@@ -1,5 +1,4 @@
 import { speciesListsStore } from "@/storage/db";
-import { getSavedLocationIds } from "@/locations";
 import { FALLBACK_LANGUAGE, getStoredLanguage } from "@/language";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
@@ -34,17 +33,15 @@ const getCacheKey = ({ locationId, taxa }: SpeciesListCacheKey) =>
 
 const getCurrentLanguage = () => getStoredLanguage() ?? FALLBACK_LANGUAGE;
 
-// A deleted location leaves entries that nothing can ever read again
-const removeListsOfDeletedLocations = async (): Promise<void> => {
-  const savedLocationIds = getSavedLocationIds();
-  const cachedLists = await speciesListsStore.getAll();
-
-  await Promise.all(
-    cachedLists
-      .filter((cachedList) => !savedLocationIds.has(cachedList.locationId))
-      .map((cachedList) => speciesListsStore.delete(cachedList.id))
-  );
-};
+/**
+ * How stale the stored `lastUsedAt` is allowed to get before a read refreshes it.
+ *
+ * Without it every read would rewrite the whole entry — hundreds of species — and the
+ * effect this sits behind runs again on a retry, on a connection coming back and on a
+ * location being edited. The prune only compares entries against each other, so an
+ * hour's worth of drift cannot change which of them it keeps.
+ */
+const TOUCH_THRESHOLD_MS = 60 * 60 * 1000;
 
 export type CachedSpeciesListResult = {
   species: SpeciesData[];
@@ -69,7 +66,6 @@ export const readCachedSpeciesList = async (
   cacheKey: SpeciesListCacheKey
 ): Promise<CachedSpeciesListResult | null> => {
   try {
-    await removeListsOfDeletedLocations();
     const cachedList = await speciesListsStore.get(getCacheKey(cacheKey));
 
     if (!cachedList) {
@@ -77,6 +73,12 @@ export const readCachedSpeciesList = async (
     }
 
     const now = Date.now();
+
+    // Reading a list is what marks it as still wanted, which is what keeps it out of
+    // the prune's reach (see @/storage/pruneCaches)
+    if (now - (cachedList.lastUsedAt ?? 0) > TOUCH_THRESHOLD_MS) {
+      await speciesListsStore.set({ ...cachedList, lastUsedAt: now });
+    }
 
     return {
       species: cachedList.species,
@@ -114,6 +116,7 @@ export const writeCachedSpeciesList = async (
       species,
       totalResults,
       timestamp: Date.now(),
+      lastUsedAt: Date.now(),
     });
   } catch (error) {
     console.warn("Failed to cache the species list:", error);

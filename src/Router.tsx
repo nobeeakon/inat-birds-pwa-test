@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 
@@ -8,6 +8,7 @@ import INaturalistDataContextProvider from "@/INaturalistDataContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useCurrentTaxa } from "@/hooks/useCurrentTaxa";
 import { useCurrentSpeciesPool } from "@/hooks/useCurrentSpeciesPool";
+import { pruneCaches } from "@/storage/pruneCaches";
 
 // The observations page is the landing route, so it stays in the main bundle. The
 // rest are split out; the locations page in particular pulls in Leaflet.
@@ -34,6 +35,18 @@ const Router = () => {
   const { currentSpeciesPool, setCurrentSpeciesPool } = useCurrentSpeciesPool(
     currentLocation?.id ?? null
   );
+
+  // Once a start, and off what the app opened on so that the entries behind this very
+  // render are the ones kept. Deliberately not re-run as the user moves between
+  // locations: the caches are only trimmed, and trimming them mid-session would throw
+  // away what a switch back is about to ask for.
+  const openedOnCacheId = currentLocation
+    ? `${currentLocation.id}-${currentTaxa}`
+    : null;
+  useEffect(() => {
+    pruneCaches(openedOnCacheId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Without a location there is nothing to observe, so the landing route is the welcome
   // screen instead of the observations page

@@ -1,5 +1,4 @@
-import type { ObservationStatus } from "@/observations/types";
-import type { ObservationType } from "@/observations/useFetchObservations";
+import type { ObservationStatus, ObservationType } from "@/observations/types";
 
 export type ReviewInfo = {
   status: ObservationStatus;

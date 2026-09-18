@@ -18,9 +18,15 @@ import type { SpeciesData } from "@/species/useFetchSpecies";
  * holding whichever rows happened to be scrolled past. Walking the list here puts
  * that back, without tying it to what is on screen.
  *
- * It runs off the fetched list rather than the species page, so photos are still on
- * their way while the user is on the observations page and keep loading if they
- * navigate away from the list.
+ * It runs from the species page rather than from the provider above the routes, so the
+ * only people who download a list of photos are the ones who opened the list. It used
+ * to run for everyone the moment the species list landed, which meant a user who never
+ * left the round still paid for the whole of it — tens of megabytes off iNaturalist's
+ * photo hosts, for a page they were not looking at.
+ *
+ * The cost of that is offline: the photos of a list that was never browsed are not
+ * there to show. The ones of a list that was are, and they are what the service worker
+ * keeps (see PHOTO_CACHE_MAX_ENTRIES).
  */
 
 /**
@@ -41,11 +47,16 @@ const PHOTOS_PER_BATCH = 6;
 const PAUSE_BETWEEN_BATCHES_MS = 1000;
 
 /**
- * Time given to the rest of the page before the prefetch starts competing with it:
- * the visible cards, and the observation photos when the list arrives while the user
- * is still browsing them.
+ * Time given to the grid before the prefetch starts competing with it.
+ *
+ * It used to be eight seconds, which was the wait the observations page needed: the
+ * prefetch ran from the provider above the routes, so it started while the user was
+ * still on the round. Mounted on the species page it only runs once they are looking at
+ * the list, and the wait is for two much smaller things — letting the rows on screen
+ * have the connection first, and not firing a batch at all for someone passing through
+ * the page on their way somewhere else.
  */
-const START_DELAY_MS = 8000;
+const START_DELAY_MS = 800;
 
 const getPhotoUrlsToPrefetch = (species: SpeciesData[]): string[] => {
   const photoUrls = new Set<string>();

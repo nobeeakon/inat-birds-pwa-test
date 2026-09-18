@@ -33,7 +33,6 @@ export const LOCAL_STORAGE_KEY = {
   currentSpeciesPool: "current_species_pool",
   currentSpeciesPoolLocationId: "current_species_pool_location_id",
   locationsInfo: "locations_info",
-  cachedObservations: "cached_observations",
   STORED_URLS_KEY: "stored-urls",
   LAST_URL_KEY: "last-url",
   EXCLUDED_TAXA_STORAGE_KEY: "excluded-taxa",

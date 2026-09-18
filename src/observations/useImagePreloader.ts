@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import type { ObservationType } from "@/observations/useFetchObservations";
+import type { ObservationType } from "@/observations/types";
 
 /**
  * Preloads all images from provided observations.

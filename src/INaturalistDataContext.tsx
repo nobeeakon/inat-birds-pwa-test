@@ -2,21 +2,18 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { useSpeciesInfoContext } from "@/SpeciesInfoContext";
 import type { FetchErrorKind } from "@/fetchData";
-import {
-  useFetchObservations,
-  type ObservationType,
-} from "@/observations/useFetchObservations";
+import { useFetchObservations } from "@/observations/useFetchObservations";
 import {
   useFetchSpecies,
   MAX_SPECIES_TO_FETCH,
   type SpeciesData,
 } from "@/species/useFetchSpecies";
-import { useSpeciesPhotoPrefetch } from "@/species/useSpeciesPhotoPrefetch";
 import {
   selectNextIndex,
   type ReviewInfo,
 } from "@/observations/spacedRepetition";
-import type { ObservationStatus } from "@/observations/types";
+import { recordSpeciesReview } from "@/observations/speciesReviews";
+import type { ObservationStatus, ObservationType } from "@/observations/types";
 import type { LocationInformation } from "@/types";
 import type { Taxa } from "@/taxa";
 import { getSpeciesPoolCategoryId } from "@/speciesPool";
@@ -206,10 +203,6 @@ const INaturalistDataContextProvider = ({
     observationsQuery.retry();
   };
 
-  // The virtualized list only requests the photos of the rows on screen, so the list
-  // is walked here to fill the photo cache for the whole of it
-  useSpeciesPhotoPrefetch(speciesQuery.data);
-
   // A different location, taxa or species pool means a whole new set of observations,
   // so the browsing position is dropped while rendering rather than in an effect
   const browsingKey = getBrowsingKey(
@@ -255,6 +248,18 @@ const INaturalistDataContextProvider = ({
     observationUuid: string,
     status: ObservationStatus
   ) => {
+    // The lasting half of the answer, kept per species rather than per observation: it
+    // is what the reinforcement picks of later rounds are chosen from, so which photo
+    // the user was looking at does not matter, only which bird it was of. Deliberately
+    // not awaited — the round moves on at the tap, and a write that fails only costs
+    // one slightly worse pick later on.
+    const reviewedObservation = observations.find(
+      (item) => item.uuid.toString() === observationUuid
+    );
+    if (reviewedObservation) {
+      recordSpeciesReview(reviewedObservation.taxon.id, status);
+    }
+
     setBrowsingState((previousState) => {
       const updatedReviewMap = new Map(previousState.reviewMap);
       const existingReview = updatedReviewMap.get(observationUuid);

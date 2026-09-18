@@ -1,86 +1,40 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchData, getFetchErrorKind, type FetchErrorKind } from "@/fetchData";
-import type { ConservationStatus } from "@/conservation";
 import { useIsOffline } from "@/onlineStatus";
 import { resolveCountryPlaceId } from "@/placeLookup";
-import { getObservationsUrlForTaxon, notNullish } from "@/utils";
+import { getObservationsUrlForTaxon, pickRandom } from "@/utils";
 import {
-  readCachedObservations,
-  writeCachedObservations,
-} from "@/observations/observationsCache";
+  buildCards,
+  readDeckEntries,
+  writeDeck,
+  type DeckCacheKey,
+} from "@/observations/deck";
+import {
+  planRound,
+  ROUND_SIZE,
+  type SpeciesCandidate,
+} from "@/observations/roundSelection";
+import { readSpeciesReviews } from "@/observations/speciesReviews";
+import type { ObservationType } from "@/observations/types";
+import type { DeckEntry } from "@/storage/db";
 import type { SpeciesData } from "@/species/useFetchSpecies";
 import type { Taxa } from "@/taxa";
 import { getFamilyName } from "@/taxonomy";
 import { getSpeciesPoolLimit, getSpeciesPoolCategoryId } from "@/speciesPool";
 import type { SpeciesPool } from "@/speciesPool";
 
-export type ObservationPhoto = {
-  id: number;
-  url: string;
-  /** Ready to display, e.g. "(c) someone, some rights reserved (CC BY-NC)". */
-  attribution?: string;
-  /** Null on the photos whose owner reserved every right. */
-  license_code?: string | null;
-};
-
-/**
- * A photo of another sighting, carrying which one it came from: the credit under it
- * links to the sighting it belongs to, not to the card it is being shown on.
- */
-export type SpeciesPhoto = ObservationPhoto & { observationId: number };
-
-export type ObservationType = {
-  uuid: string;
-  id: number;
-  /**
-   * Scientific family name, e.g. "Icteridae".
-   *
-   * Not part of the API response: the observations endpoint only returns ancestor
-   * ids, so this is copied from the species list entry this observation was fetched
-   * for. Absent on observations cached before the field existed.
-   */
-  family?: string | null;
-  /**
-   * Other local sightings of the same species, shown once the answer is revealed.
-   *
-   * Not part of the API response either. Each species is fetched a page of sightings
-   * at a time and only a few of them become cards, so the photos of the rest are
-   * already paid for and are of birds from around the user's location — which is what
-   * the curated photos on the taxon record are not, being the same worldwide.
-   */
-  speciesPhotos?: SpeciesPhoto[];
-  photos: ObservationPhoto[];
-  taxon: {
-    id: number;
-    name: string;
-    preferred_common_name: string;
-    conservation_status?: ConservationStatus;
-    establishment_means?: {
-      establishment_means: string;
-    };
-  };
-};
-
 type ResponseType = {
   results: ObservationType[];
 };
 
-/** Species drawn per round. */
-const SPECIES_NUMBER = 15;
-
 /**
  * Sightings asked for per species, in one request.
  *
- * Only the first few become cards; the rest are here for their photos. Fifteen is
- * about what a species' reveal deck can use — more would be photos nobody pages to.
+ * Only a few become cards; the rest are here for their photos, and for the cards the
+ * next round makes of the same species out of the same entry. Fifteen is about what a
+ * species' reveal deck can use — more would be photos nobody pages to.
  */
 const OBSERVATIONS_PER_SPECIES = 15;
-
-/** Cards made per species, out of the sightings fetched for it. */
-const CARDS_PER_SPECIES = 5;
-
-/** Photos kept per species for the reveal, beyond the card's own. */
-const MAX_SPECIES_PHOTOS = 12;
 
 /**
  * Added to the location's radius when fetching sightings of a species.
@@ -95,39 +49,13 @@ const MAX_SPECIES_PHOTOS = 12;
  */
 const OBSERVATION_RADIUS_MARGIN = 250;
 
-const selectRandomNumbers = (size: number, max: number = 100) => {
-  const numbers = new Set(Array(max).keys());
-
-  const selectedNumbers = [];
-
-  for (let i = 0; i < size; i++) {
-    const arrayNumbers = Array.from(numbers);
-    const randomIndex = Math.floor(Math.random() * arrayNumbers.length);
-    selectedNumbers.push(arrayNumbers[randomIndex]);
-    numbers.delete(arrayNumbers[randomIndex]);
-  }
-
-  return selectedNumbers;
-};
-
-/** A species to fetch sightings for, and what is already known about it. */
-type SpeciesToFetch = {
-  taxonId: number;
-  family?: string | null;
-};
-
-const pickRandom = <T>(items: T[], size: number): T[] =>
-  selectRandomNumbers(Math.min(size, items.length), items.length)
-    .map((index) => items[index])
-    .filter(notNullish);
-
 /**
- * The species this round draws from, out of the list already fetched for the location.
+ * The species a round may draw from, out of the list already fetched for the location.
  *
  * No request of its own: the species page's list is what a pool is a slice of. It
  * arrives most observed first, so a preset pool is its first N entries.
  */
-const selectSpecies = ({
+const getRoundCandidates = ({
   species,
   speciesPool,
   categoryTaxonIds,
@@ -135,7 +63,7 @@ const selectSpecies = ({
   species: SpeciesData[];
   speciesPool: SpeciesPool;
   categoryTaxonIds: string | null;
-}): SpeciesToFetch[] => {
+}): SpeciesCandidate[] => {
   const getFamilyOf = (taxonId: number) =>
     getFamilyName(
       species.find((item) => item.taxon.id === taxonId)?.taxon.ancestors
@@ -144,78 +72,63 @@ const selectSpecies = ({
   // A category pool is a set of taxon ids the user tagged, which can include species
   // the location's list does not have; those simply come without a family name
   if (categoryTaxonIds !== null) {
-    const taggedTaxonIds = categoryTaxonIds
+    return categoryTaxonIds
       .split(",")
       .filter(Boolean)
       .map(Number)
-      .filter((taxonId) => !Number.isNaN(taxonId));
-
-    return pickRandom(taggedTaxonIds, SPECIES_NUMBER).map((taxonId) => ({
-      taxonId,
-      family: getFamilyOf(taxonId),
-    }));
+      .filter((taxonId) => !Number.isNaN(taxonId))
+      .map((taxonId) => ({ taxonId, family: getFamilyOf(taxonId) }));
   }
 
   const poolLimit = getSpeciesPoolLimit(speciesPool);
   const pool = poolLimit ? species.slice(0, poolLimit) : species;
 
-  return pickRandom(pool, SPECIES_NUMBER).map((item) => ({
+  return pool.map((item) => ({
     taxonId: item.taxon.id,
     family: getFamilyName(item.taxon.ancestors),
   }));
 };
 
 /**
- * The cards for one species, and the photos its reveal can show.
+ * A page of local sightings of one species, ready to be kept in the deck.
  *
  * One request per species: a single request for all of them at once comes back
  * distributed by how often each is observed, which leaves the uncommon ones — the very
  * ones worth learning — with nothing.
  */
-const fetchObservationsOfSpecies = async ({
-  speciesItem,
+const fetchDeckEntry = async ({
+  candidate,
   lat,
   lng,
   radius,
   taxa,
   abortSignal,
 }: {
-  speciesItem: SpeciesToFetch;
+  candidate: SpeciesCandidate;
   lat: number;
   lng: number;
   radius: number;
   taxa: Taxa;
   abortSignal: AbortSignal;
-}): Promise<ObservationType[]> => {
+}): Promise<DeckEntry> => {
   const { results } = await fetchData<ResponseType>(
     getObservationsUrlForTaxon({
       lat,
       lng,
       radius: radius + OBSERVATION_RADIUS_MARGIN,
       taxa,
-      taxonId: speciesItem.taxonId,
+      taxonId: candidate.taxonId,
       perPage: OBSERVATIONS_PER_SPECIES,
     }),
     abortSignal
   );
 
-  // Every sighting fetched contributes its photos, the cards among them included: a
-  // card's own photos are filtered out of its deck where it is rendered, and leaving
-  // them in here means the other cards of this species can still show them.
-  const speciesPhotos: SpeciesPhoto[] = results
-    .flatMap((observation) =>
-      (observation.photos ?? []).map((photo) => ({
-        ...photo,
-        observationId: observation.id,
-      }))
-    )
-    .slice(0, MAX_SPECIES_PHOTOS);
-
-  return pickRandom(results, CARDS_PER_SPECIES).map((observation) => ({
-    ...observation,
-    family: speciesItem.family,
-    speciesPhotos,
-  }));
+  return {
+    taxonId: candidate.taxonId,
+    family: candidate.family,
+    observations: results,
+    fetchedAt: Date.now(),
+  };
 };
 
 export const useFetchObservations = ({
@@ -305,17 +218,21 @@ export const useFetchObservations = ({
         return;
       }
 
-      // Observations kept from a previous session give the user something to look at
-      // while the real ones are fetched. A category pool skips the cache: its entry
-      // holds the species of the location, not the ones of the category.
+      const deckCacheKey: DeckCacheKey = { locationId, taxa, lat, lng, radius };
+      const deckEntries = await readDeckEntries(deckCacheKey);
+      if (isStaleRequest) return;
+
+      // A round's worth of what the deck already holds, to fill the page while the real
+      // round is put together. A category pool gets none: the deck holds the species of
+      // the location, and showing those to someone who asked for a category would be
+      // showing them the wrong birds rather than early ones.
       const cachedObservations =
-        poolCategoryId === null
-          ? readCachedObservations({ locationId, taxa })
+        poolCategoryId === null && deckEntries.length > 0
+          ? pickRandom(deckEntries, ROUND_SIZE).flatMap(buildCards)
           : null;
 
-      // Offline the cached observations are all there is. Not left loading: there is
-      // nothing in flight, and nothing will be until the connection comes back, which
-      // re-runs this effect.
+      // Offline the deck is all there is. Not left loading: there is nothing in flight,
+      // and nothing will be until the connection comes back, which re-runs this effect.
       if (isOffline) {
         setQueries({
           loading: false,
@@ -357,34 +274,61 @@ export const useFetchObservations = ({
         // common names, endemicity and conservation listings
         await resolveCountryPlaceId({ lat, lng });
 
-        const speciesToFetch = selectSpecies({
-          species,
-          speciesPool,
-          categoryTaxonIds,
+        const reviews = await readSpeciesReviews();
+        if (isStaleRequest) return;
+
+        const { reinforced, reused, toFetch, keptEntries } = planRound({
+          candidates: getRoundCandidates({
+            species,
+            speciesPool,
+            categoryTaxonIds,
+          }),
+          deckEntries,
+          reviews,
         });
 
-        const allObservations: ObservationType[] = [];
+        const fetchedEntries: DeckEntry[] = [];
 
-        for (const speciesItem of speciesToFetch) {
-          allObservations.push(
-            ...(await fetchObservationsOfSpecies({
-              speciesItem,
+        for (const candidate of toFetch) {
+          fetchedEntries.push(
+            await fetchDeckEntry({
+              candidate,
               lat,
               lng,
               radius,
               taxa,
               abortSignal: abortController.signal,
-            }))
+            })
           );
+
+          // Stored as each species lands rather than once the round is assembled. A
+          // cold round is fifteen requests and the rate limit gives it a second each,
+          // so it is a quarter of a minute long: a user who reloads or walks away part
+          // way through it would otherwise throw away every species it had already
+          // paid for, and the next round would start from nothing and pay again.
+          if (poolCategoryId === null) {
+            await writeDeck(deckCacheKey, [...keptEntries, ...fetchedEntries]);
+          }
         }
+
+        // Every species of the round becomes cards here rather than when it was
+        // fetched, so a species the deck has shown before comes back with a different
+        // set of them
+        const allObservations = [
+          ...reinforced,
+          ...reused,
+          ...fetchedEntries,
+        ].flatMap(buildCards);
 
         const shuffled = pickRandom(allObservations, allObservations.length);
 
-        // Refill the cache so the next start has something to show right away. Only
-        // the pools that draw from the location belong in that entry. An abandoned
-        // run never gets here, having been aborted part way through its species.
+        // Again at the end, for the rounds that fetched nothing at all: the sweep still
+        // has to be persisted, and the deck still has to be marked as used so the prune
+        // keeps it. A category round only reads the deck — its species are the ones the
+        // user tagged rather than the location's, so they are not what a later round of
+        // this location should be filled with.
         if (poolCategoryId === null) {
-          writeCachedObservations({ locationId, taxa }, shuffled);
+          await writeDeck(deckCacheKey, [...keptEntries, ...fetchedEntries]);
         }
 
         if (isStaleRequest) return;
