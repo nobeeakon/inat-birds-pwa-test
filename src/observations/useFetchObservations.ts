@@ -10,10 +10,11 @@ import {
   type DeckCacheKey,
 } from "@/observations/deck";
 import {
+  getRoundSize,
   planRound,
-  ROUND_SIZE,
   type SpeciesCandidate,
 } from "@/observations/roundSelection";
+import { getIsFirstOrReturningVisit } from "@/lastUsed";
 import { readSpeciesReviews } from "@/observations/speciesReviews";
 import type { ObservationType } from "@/observations/types";
 import type { DeckEntry } from "@/storage/db";
@@ -222,13 +223,15 @@ export const useFetchObservations = ({
       const deckEntries = await readDeckEntries(deckCacheKey);
       if (isStaleRequest) return;
 
+      const roundSize = getRoundSize(getIsFirstOrReturningVisit());
+
       // A round's worth of what the deck already holds, to fill the page while the real
       // round is put together. A category pool gets none: the deck holds the species of
       // the location, and showing those to someone who asked for a category would be
       // showing them the wrong birds rather than early ones.
       const cachedObservations =
         poolCategoryId === null && deckEntries.length > 0
-          ? pickRandom(deckEntries, ROUND_SIZE).flatMap(buildCards)
+          ? pickRandom(deckEntries, roundSize).flatMap(buildCards)
           : null;
 
       // Offline the deck is all there is. Not left loading: there is nothing in flight,
@@ -285,6 +288,7 @@ export const useFetchObservations = ({
           }),
           deckEntries,
           reviews,
+          roundSize,
         });
 
         const fetchedEntries: DeckEntry[] = [];
@@ -302,9 +306,9 @@ export const useFetchObservations = ({
           );
 
           // Stored as each species lands rather than once the round is assembled. A
-          // cold round is fifteen requests and the rate limit gives it a second each,
-          // so it is a quarter of a minute long: a user who reloads or walks away part
-          // way through it would otherwise throw away every species it had already
+          // cold round is a request per species and the rate limit gives it a second
+          // each, so it runs for a good part of a minute: a user who reloads or walks
+          // away part way through it would otherwise throw away every species it had already
           // paid for, and the next round would start from nothing and pay again.
           if (poolCategoryId === null) {
             await writeDeck(deckCacheKey, [...keptEntries, ...fetchedEntries]);

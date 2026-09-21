@@ -27,6 +27,7 @@ export const API_CLIENT_QUERY_PARAM = `app_name=${API_CLIENT_NAME}`;
 
 export const LOCAL_STORAGE_KEY = {
   language: "language",
+  lastUsedAt: "last-used-at",
   resolvedPlaces: "resolved_places",
   currentLocationId: "current_location_id",
   currentTaxa: "current_taxa",

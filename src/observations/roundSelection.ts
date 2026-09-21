@@ -10,6 +10,20 @@ import { notNullish, pickRandom } from "@/utils";
 export const ROUND_SIZE = 15;
 
 /**
+ * Species drawn per round on a first visit, or a first one after a fortnight away.
+ *
+ * Such a visit has an empty or fully stale deck, so every species it shows is a
+ * request of its own, against a rate limit shared with the species list it just paid
+ * for. Ten is still a round worth playing and is a third off the bill for the users
+ * who only ever play one.
+ */
+export const FIRST_VISIT_ROUND_SIZE = 10;
+
+/** How many species a round draws, given whose visit it is. */
+export const getRoundSize = (isFirstOrReturningVisit: boolean): number =>
+  isFirstOrReturningVisit ? FIRST_VISIT_ROUND_SIZE : ROUND_SIZE;
+
+/**
  * Species of a round brought back because the user has trouble with them, rather than
  * drawn at random. They are chosen from the deck and only from the deck, so they never
  * cost a request: what is left of the round is what decides how much a round is worth.
@@ -49,20 +63,23 @@ export type RoundPlan = {
  *  3. Then the rest of the round is drawn at random and answered from what survived,
  *     falling back to a request per species that did not.
  *
- * A first ever round has neither reviews nor a deck, so nothing is reinforced, all
- * fifteen are drawn at random and all fifteen are fetched — exactly what a round used
- * to cost. From the second round on the reinforcement half is free and the random half
- * is answered from the deck more and more often as it fills.
+ * A first ever round has neither reviews nor a deck, so nothing is reinforced and
+ * every species drawn is fetched — which is why that round is the shorter one. From
+ * the second round on the reinforcement half is free and the random half is answered
+ * from the deck more and more often as it fills.
  */
 export const planRound = ({
   candidates,
   deckEntries,
   reviews,
+  roundSize,
 }: {
   /** The species the round may draw from: the pool, or the tagged species of a category. */
   candidates: SpeciesCandidate[];
   deckEntries: DeckEntry[];
   reviews: SpeciesReviewsByTaxonId;
+  /** Species this round shows, from `getRoundSize`. */
+  roundSize: number;
 }): RoundPlan => {
   const entryByTaxonId = new Map(
     deckEntries.map((entry) => [entry.taxonId, entry])
@@ -105,7 +122,7 @@ export const planRound = ({
     candidates.filter(
       (candidate) => !reinforcedTaxonIds.has(candidate.taxonId)
     ),
-    ROUND_SIZE - reinforced.length
+    roundSize - reinforced.length
   );
 
   const reused: DeckEntry[] = [];
