@@ -46,10 +46,10 @@ export const getFetchErrorKind = (error: unknown): FetchErrorKind =>
     : "generic";
 
 /** Every URL carries the app identifier, wherever in the app it was built. */
-const withClientIdentifier = (url: string): string => url
-  // url.includes(API_CLIENT_QUERY_PARAM)
-  //   ? url
-  //   : `${url}${url.includes("?") ? "&" : "?"}${API_CLIENT_QUERY_PARAM}`;
+const withClientIdentifier = (url: string): string => url;
+// url.includes(API_CLIENT_QUERY_PARAM)
+//   ? url
+//   : `${url}${url.includes("?") ? "&" : "?"}${API_CLIENT_QUERY_PARAM}`;
 
 export const fetchData = async <T>(
   URL: string,

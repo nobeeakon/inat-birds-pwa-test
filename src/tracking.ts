@@ -40,7 +40,6 @@ const buildEventsEndpoint = (): string | null => {
   const projectId = readEnvironmentVariable("VITE_FIREBASE_PROJECT_ID");
   const apiKey = readEnvironmentVariable("VITE_FIREBASE_API_KEY");
 
-
   if (!projectId || !apiKey) {
     return null;
   }
