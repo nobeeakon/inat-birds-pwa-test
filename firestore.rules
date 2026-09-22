@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// Rules for the inatMemoEvents collection written by src/tracking.ts, whose
+// FIRESTORE_COLLECTION has to name the same collection these rules guard.
+//
+// Paste these into Firebase console > Firestore Database > Rules, or deploy them with
+// the Firebase CLI. There is no account behind the app, so the endpoint has to accept
+// unauthenticated writes; everything that can be closed is closed instead.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /inatMemoEvents/{eventId} {
+      // Nothing is readable from the client, and an event cannot be changed or removed
+      // once written. The console and the Firebase CLI are unaffected by these rules.
+      allow read, update, delete: if false;
+
+      // A create is only accepted if it carries exactly the three expected fields,
+      // with the expected types and one of the two known actions. Without this, an
+      // open write endpoint accepts documents of any shape and any size.
+      allow create: if request.resource.data.keys().hasOnly(['id', 'date', 'action'])
+                    && request.resource.data.id is string
+                    && request.resource.data.id.size() <= 64
+                    && request.resource.data.date is timestamp
+                    && request.resource.data.action in ['install', 'open'];
+    }
+
+    // Any other collection stays shut
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -5,6 +5,7 @@ import InstallMobileIcon from "@mui/icons-material/InstallMobile";
 
 import InstallInstructionsDialog from "@/components/InstallInstructionsDialog";
 import { attentionRingStyles } from "@/components/attentionRing";
+import { trackEvent } from "@/tracking";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -65,6 +66,10 @@ const InstallButton = () => {
   }, [isInstalled]);
 
   const handleInstallClick = async () => {
+    // The tap itself, before anything can divert it: what is being counted is the
+    // intent to install, not whether this browser had a prompt to offer
+    trackEvent("install");
+
     if (!deferredPrompt) {
       setAreInstructionsOpen(true);
       return;

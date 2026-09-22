@@ -28,6 +28,7 @@ export const API_CLIENT_QUERY_PARAM = `app_name=${API_CLIENT_NAME}`;
 export const LOCAL_STORAGE_KEY = {
   language: "language",
   lastUsedAt: "last-used-at",
+  visitorId: "visitor-id",
   resolvedPlaces: "resolved_places",
   currentLocationId: "current_location_id",
   currentTaxa: "current_taxa",
@@ -47,4 +48,15 @@ export const LOCAL_STORAGE_KEY = {
     lastUrl: "species-last-url",
     STORED_URLS_KEY: "species-stored-urls",
   },
+};
+
+/**
+ * Keys held for the life of a tab rather than the life of the browser.
+ *
+ * Separate from LOCAL_STORAGE_KEY because the storage they belong to is what gives
+ * them their meaning: this marker has to be forgotten when the app is closed, which is
+ * exactly what sessionStorage does and localStorage does not.
+ */
+export const SESSION_STORAGE_KEY = {
+  trackingSessionCounted: "tracking-session-counted",
 };
